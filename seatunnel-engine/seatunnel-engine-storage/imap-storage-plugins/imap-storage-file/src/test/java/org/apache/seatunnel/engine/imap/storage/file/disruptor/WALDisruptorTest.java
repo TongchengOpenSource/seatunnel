@@ -21,6 +21,7 @@
 package org.apache.seatunnel.engine.imap.storage.file.disruptor;
 
 import org.apache.seatunnel.engine.imap.storage.file.bean.IMapFileData;
+import org.apache.seatunnel.engine.imap.storage.file.common.WALSyncType;
 import org.apache.seatunnel.engine.imap.storage.file.config.FileConfiguration;
 import org.apache.seatunnel.engine.imap.storage.file.future.RequestFuture;
 import org.apache.seatunnel.engine.imap.storage.file.future.RequestFutureCache;
@@ -58,10 +59,43 @@ public class WALDisruptorTest {
     }
 
     @Test
-    void testProducerAndConsumer() throws IOException {
+    void testSyncProducerAndConsumer() throws IOException {
         FS = FileSystem.get(CONF);
         DISRUPTOR =
-                new WALDisruptor(FS, FileConfiguration.HDFS, FILEPATH, new ProtoStuffSerializer());
+                new WALDisruptor(
+                        FS,
+                        FileConfiguration.HDFS,
+                        WALSyncType.SYNC,
+                        FILEPATH,
+                        new ProtoStuffSerializer());
+        IMapFileData data;
+        for (int i = 0; i < 100; i++) {
+            data =
+                    IMapFileData.builder()
+                            .deleted(false)
+                            .key(("key" + i).getBytes())
+                            .keyClassName(String.class.getName())
+                            .value(("value" + i).getBytes())
+                            .valueClassName(String.class.getName())
+                            .timestamp(System.nanoTime())
+                            .build();
+            long requestId = RequestFutureCache.getRequestId();
+            RequestFutureCache.put(requestId, new RequestFuture());
+            DISRUPTOR.tryAppendPublish(data, requestId);
+        }
+        DISRUPTOR.close();
+    }
+
+    @Test
+    void testAsyncProducerAndConsumer() throws IOException {
+        FS = FileSystem.get(CONF);
+        DISRUPTOR =
+                new WALDisruptor(
+                        FS,
+                        FileConfiguration.HDFS,
+                        WALSyncType.ASYNC,
+                        FILEPATH,
+                        new ProtoStuffSerializer());
         IMapFileData data;
         for (int i = 0; i < 100; i++) {
             data =
