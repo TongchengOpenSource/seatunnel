@@ -20,10 +20,12 @@ package org.apache.seatunnel.connectors.seatunnel.starrocks.source;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.seatunnel.api.table.catalog.TablePath;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Getter
 @Setter
@@ -31,4 +33,5 @@ import java.util.Map;
 public class StarRocksSourceState implements Serializable {
     private boolean shouldEnumerate;
     private Map<Integer, List<StarRocksSourceSplit>> pendingSplit;
+    private List<TablePath> pendingTables;
 }

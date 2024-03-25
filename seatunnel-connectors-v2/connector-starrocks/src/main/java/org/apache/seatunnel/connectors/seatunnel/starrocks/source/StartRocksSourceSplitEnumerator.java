@@ -18,11 +18,13 @@
 package org.apache.seatunnel.connectors.seatunnel.starrocks.source;
 
 import org.apache.seatunnel.api.source.SourceSplitEnumerator;
+import org.apache.seatunnel.api.table.catalog.TablePath;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 import org.apache.seatunnel.common.exception.CommonErrorCodeDeprecated;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.StarRocksQueryPlanReadClient;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.model.QueryPartition;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SourceConfig;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksSourceTableConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
 
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -47,43 +51,53 @@ public class StartRocksSourceSplitEnumerator
     private volatile boolean shouldEnumerate;
     private final Context<StarRocksSourceSplit> context;
 
+    private final ConcurrentLinkedQueue<TablePath> pendingTables;
+
     public StartRocksSourceSplitEnumerator(
             SourceSplitEnumerator.Context<StarRocksSourceSplit> context,
-            SourceConfig sourceConfig,
-            SeaTunnelRowType seaTunnelRowType) {
-        this(context, sourceConfig, seaTunnelRowType, null);
+            SourceConfig sourceConfig) {
+        this(context, sourceConfig, null);
     }
 
     public StartRocksSourceSplitEnumerator(
             SourceSplitEnumerator.Context<StarRocksSourceSplit> context,
             SourceConfig sourceConfig,
-            SeaTunnelRowType seaTunnelRowType,
             StarRocksSourceState sourceState) {
         this.sourceConfig = sourceConfig;
-        this.starRocksQueryPlanReadClient =
-                new StarRocksQueryPlanReadClient(sourceConfig, seaTunnelRowType);
-
+        this.starRocksQueryPlanReadClient = new StarRocksQueryPlanReadClient(sourceConfig);
         this.context = context;
+        List<TablePath> tables = sourceConfig.getTableConfigList().stream()
+                .map(StarRocksSourceTableConfig::getTablePath)
+                .collect(Collectors.toList());
         this.pendingSplit = new HashMap<>();
+        this.pendingTables = new ConcurrentLinkedQueue<>(tables);
         this.shouldEnumerate = sourceState == null;
         if (sourceState != null) {
             this.shouldEnumerate = sourceState.isShouldEnumerate();
             this.pendingSplit.putAll(sourceState.getPendingSplit());
+            this.pendingTables.addAll(sourceState.getPendingTables());
         }
+
     }
 
     @Override
     public void run() {
         Set<Integer> readers = context.registeredReaders();
         if (shouldEnumerate) {
-            List<StarRocksSourceSplit> newSplits = getStarRocksSourceSplit();
 
-            synchronized (stateLock) {
-                addPendingSplit(newSplits);
-                shouldEnumerate = false;
+            while(!pendingTables.isEmpty()){
+                TablePath tablePath = pendingTables.poll();
+                log.info("Splitting table {}.", tablePath);
+                List<StarRocksSourceSplit> newSplits = getStarRocksSourceSplit(tablePath);
+                log.info("Split table {} into {} splits.", tablePath, newSplits.size());
+
+                synchronized (stateLock) {
+                    addPendingSplit(newSplits);
+                    shouldEnumerate = false;
+                }
+
+                assignSplit(readers);
             }
-
-            assignSplit(readers);
         }
 
         log.debug(
@@ -116,7 +130,8 @@ public class StartRocksSourceSplitEnumerator
     @Override
     public StarRocksSourceState snapshotState(long checkpointId) {
         synchronized (stateLock) {
-            return new StarRocksSourceState(shouldEnumerate, pendingSplit);
+            return new StarRocksSourceState(shouldEnumerate, pendingSplit,
+                    new ArrayList<>(pendingTables));
         }
     }
 
@@ -179,9 +194,9 @@ public class StartRocksSourceSplitEnumerator
         }
     }
 
-    List<StarRocksSourceSplit> getStarRocksSourceSplit() {
+    List<StarRocksSourceSplit> getStarRocksSourceSplit(TablePath tablePath) {
         List<StarRocksSourceSplit> sourceSplits = new ArrayList<>();
-        List<QueryPartition> partitions = starRocksQueryPlanReadClient.findPartitions();
+        List<QueryPartition> partitions = starRocksQueryPlanReadClient.findPartitions(tablePath);
         for (int i = 0; i < partitions.size(); i++) {
             sourceSplits.add(
                     new StarRocksSourceSplit(

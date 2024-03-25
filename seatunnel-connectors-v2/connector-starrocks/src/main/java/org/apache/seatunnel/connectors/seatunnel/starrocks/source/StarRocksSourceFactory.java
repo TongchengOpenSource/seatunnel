@@ -74,9 +74,8 @@ public class StarRocksSourceFactory implements TableSourceFactory {
             TableSource<T, SplitT, StateT> createSource(TableSourceFactoryContext context) {
         ReadonlyConfig config = context.getOptions();
         SourceConfig starRocksSourceConfig = new SourceConfig(config);
-        CatalogTable catalogTable = CatalogTableUtil.buildWithConfig(config);
         return () ->
                 (SeaTunnelSource<T, SplitT, StateT>)
-                        new StarRocksSource(starRocksSourceConfig, catalogTable);
+                        new StarRocksSource(starRocksSourceConfig);
     }
 }

@@ -20,12 +20,15 @@ package org.apache.seatunnel.connectors.seatunnel.starrocks.source;
 import org.apache.seatunnel.api.source.Boundedness;
 import org.apache.seatunnel.api.source.Collector;
 import org.apache.seatunnel.api.source.SourceReader;
+import org.apache.seatunnel.api.table.catalog.TablePath;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.StarRocksBeReadClient;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.model.QueryPartition;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SourceConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksSourceTableConfig;
+
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,6 +39,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRocksSourceSplit> {
@@ -43,18 +47,28 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
     private final Queue<StarRocksSourceSplit> pendingSplits;
     private final SourceReader.Context context;
     private final SourceConfig sourceConfig;
-    private final SeaTunnelRowType seaTunnelRowType;
+    private final Map<TablePath, SeaTunnelRowType> tables;
     private Map<String, StarRocksBeReadClient> clientsPools;
     private volatile boolean noMoreSplitsAssignment;
 
     public StarRocksSourceReader(
             SourceReader.Context readerContext,
-            SeaTunnelRowType seaTunnelRowType,
             SourceConfig sourceConfig) {
         this.pendingSplits = new LinkedList<>();
         this.context = readerContext;
         this.sourceConfig = sourceConfig;
-        this.seaTunnelRowType = seaTunnelRowType;
+        Map<TablePath, SeaTunnelRowType> tables = new HashMap<>();
+        sourceConfig
+                .getTableConfigList()
+                .forEach(
+                        starRocksSourceTableConfig ->
+                                tables.put(
+                                        starRocksSourceTableConfig.getTablePath(),
+                                        starRocksSourceTableConfig
+                                                .getCatalogTable()
+                                                .getSeaTunnelRowType()));
+        this.tables = tables;
+
     }
 
     @Override
@@ -103,6 +117,8 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
             clientsPools.put(beAddress, client);
         }
         // open scanner to be
+        TablePath tablePath = TablePath.of(partition.getDatabase(), partition.getTable());
+        SeaTunnelRowType seaTunnelRowType = tables.get(tablePath);
         client.openScanner(partition, seaTunnelRowType);
         while (client.hasNext()) {
             SeaTunnelRow seaTunnelRow = client.getNext();

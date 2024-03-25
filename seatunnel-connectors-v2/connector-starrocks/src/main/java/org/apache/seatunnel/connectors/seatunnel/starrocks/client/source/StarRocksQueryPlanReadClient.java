@@ -17,6 +17,7 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.client.source;
 
+import org.apache.seatunnel.api.table.catalog.TablePath;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 import org.apache.seatunnel.common.utils.JsonUtils;
 import org.apache.seatunnel.common.utils.RetryUtils;
@@ -24,6 +25,7 @@ import org.apache.seatunnel.connectors.seatunnel.starrocks.client.HttpHelper;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.model.QueryPartition;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.model.QueryPlan;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SourceConfig;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksSourceTableConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
 
@@ -40,45 +42,49 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class StarRocksQueryPlanReadClient {
     private RetryUtils.RetryMaterial retryMaterial;
     private SourceConfig sourceConfig;
-    private SeaTunnelRowType seaTunnelRowType;
     private final HttpHelper httpHelper = new HttpHelper();
+    private final Map<TablePath, StarRocksSourceTableConfig> tables;
 
     private static final long DEFAULT_SLEEP_TIME_MS = 1000L;
 
-    public StarRocksQueryPlanReadClient(
-            SourceConfig sourceConfig, SeaTunnelRowType seaTunnelRowType) {
+    public StarRocksQueryPlanReadClient(SourceConfig sourceConfig) {
         this.sourceConfig = sourceConfig;
-        this.seaTunnelRowType = seaTunnelRowType;
         this.retryMaterial =
                 new RetryUtils.RetryMaterial(
                         sourceConfig.getMaxRetries(),
                         true,
                         exception -> true,
                         DEFAULT_SLEEP_TIME_MS);
+        this.tables =
+                sourceConfig.getTableConfigList().stream()
+                        .collect(
+                                Collectors.toMap(
+                                        StarRocksSourceTableConfig::getTablePath, Function.identity()));
+
     }
 
-    public List<QueryPartition> findPartitions() {
+    public List<QueryPartition> findPartitions(TablePath tablePath) {
         List<String> nodeUrls = sourceConfig.getNodeUrls();
         QueryPlan queryPlan =
-                getQueryPlan(genQuerySql(), nodeUrls.get(new Random().nextInt(nodeUrls.size())));
+                getQueryPlan(genQuerySql(tablePath), nodeUrls.get(new Random().nextInt(nodeUrls.size())), tablePath);
         Map<String, List<Long>> be2Tablets = selectBeForTablet(queryPlan);
         return tabletsMapToPartition(
                 be2Tablets,
                 queryPlan.getQueryPlan(),
-                sourceConfig.getDatabase(),
-                sourceConfig.getTable());
+                tablePath);
     }
 
     private List<QueryPartition> tabletsMapToPartition(
             Map<String, List<Long>> be2Tablets,
             String opaquedQueryPlan,
-            String database,
-            String table)
+            TablePath table)
             throws IllegalArgumentException {
         int tabletsSize = sourceConfig.getRequestTabletSize();
         List<QueryPartition> partitions = new ArrayList<>();
@@ -100,8 +106,8 @@ public class StarRocksQueryPlanReadClient {
                 first = first + tabletsSize;
                 QueryPartition partitionDefinition =
                         new QueryPartition(
-                                database,
-                                table,
+                                table.getDatabaseName(),
+                                table.getTableName(),
                                 beInfo.getKey(),
                                 partitionTablets,
                                 opaquedQueryPlan);
@@ -136,14 +142,14 @@ public class StarRocksQueryPlanReadClient {
         return beXTablets;
     }
 
-    private QueryPlan getQueryPlan(String querySQL, String httpNode) {
+    private QueryPlan getQueryPlan(String querySQL, String httpNode, TablePath tablePath) {
         String url =
                 new StringBuilder("http://")
                         .append(httpNode)
                         .append("/api/")
-                        .append(sourceConfig.getDatabase())
+                        .append(tablePath.getDatabaseName())
                         .append("/")
-                        .append(sourceConfig.getTable())
+                        .append(tablePath.getTableName())
                         .append("/_query_plan")
                         .toString();
 
@@ -184,7 +190,10 @@ public class StarRocksQueryPlanReadClient {
         return headerMap;
     }
 
-    private String genQuerySql() {
+    private String genQuerySql(TablePath tablePath) {
+
+        StarRocksSourceTableConfig starRocksSourceTableConfig = tables.get(tablePath);
+        SeaTunnelRowType seaTunnelRowType = starRocksSourceTableConfig.getCatalogTable().getSeaTunnelRowType();
         String columns =
                 seaTunnelRowType.getFieldNames().length != 0
                         ? String.join(",", seaTunnelRowType.getFieldNames())
@@ -192,18 +201,18 @@ public class StarRocksQueryPlanReadClient {
         String filter =
                 sourceConfig.getScanFilter().isEmpty()
                         ? ""
-                        : " where " + sourceConfig.getScanFilter();
+                        : " where " + starRocksSourceTableConfig.getScanFilter();
 
         String sql =
                 "select "
                         + columns
                         + " from "
                         + "`"
-                        + sourceConfig.getDatabase()
+                        + tablePath.getDatabaseName()
                         + "`"
                         + "."
                         + "`"
-                        + sourceConfig.getTable()
+                        + tablePath.getTableName()
                         + "`"
                         + filter;
         log.debug("Generate query sql '{}'.", sql);
