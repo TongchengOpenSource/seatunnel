@@ -374,17 +374,6 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                                         .getSerializationService()
                                         .toObject(jobInfo.getJobImmutableInformation()));
 
-        ClassLoaderService classLoaderService = getSeaTunnelServer(false).getClassLoaderService();
-        ClassLoader classLoader =
-                classLoaderService.getClassLoader(
-                        jobId, jobImmutableInformation.getPluginJarsUrls());
-        LogicalDag logicalDag =
-                CustomClassLoadedObject.deserializeWithCustomClassLoader(
-                        this.textCommandService.getNode().getNodeEngine().getSerializationService(),
-                        classLoader,
-                        jobImmutableInformation.getLogicalDag());
-        classLoaderService.releaseClassLoader(jobId, jobImmutableInformation.getPluginJarsUrls());
-
         SeaTunnelServer seaTunnelServer = getSeaTunnelServer(true);
         String jobMetrics;
         JobStatus jobStatus;
@@ -401,11 +390,24 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                                                     getNode().nodeEngine,
                                                     new GetJobStatusOperation(jobId))
                                             .join()];
+            seaTunnelServer = getSeaTunnelServer(false);
+
         } else {
             jobMetrics =
                     seaTunnelServer.getCoordinatorService().getJobMetrics(jobId).toJsonString();
             jobStatus = seaTunnelServer.getCoordinatorService().getJobStatus(jobId);
         }
+
+        ClassLoaderService classLoaderService = seaTunnelServer.getClassLoaderService();
+        ClassLoader classLoader =
+                classLoaderService.getClassLoader(
+                        jobId, jobImmutableInformation.getPluginJarsUrls());
+        LogicalDag logicalDag =
+                CustomClassLoadedObject.deserializeWithCustomClassLoader(
+                        this.textCommandService.getNode().getNodeEngine().getSerializationService(),
+                        classLoader,
+                        jobImmutableInformation.getLogicalDag());
+        classLoaderService.releaseClassLoader(jobId, jobImmutableInformation.getPluginJarsUrls());
 
         jobInfoJson
                 .add(RestConstant.JOB_ID, String.valueOf(jobId))
