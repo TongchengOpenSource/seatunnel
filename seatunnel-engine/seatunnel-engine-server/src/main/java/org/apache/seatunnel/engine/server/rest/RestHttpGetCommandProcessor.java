@@ -388,6 +388,7 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
         SeaTunnelServer seaTunnelServer = getSeaTunnelServer(true);
         String jobMetrics;
         JobStatus jobStatus;
+
         if (seaTunnelServer == null) {
             jobMetrics =
                     (String)
