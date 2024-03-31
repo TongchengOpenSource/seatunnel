@@ -254,7 +254,7 @@ public class SeaTunnelServer
     public boolean isMasterNode() {
         // must retry until the cluster have master node
         try {
-            return Boolean.TRUE.equals(
+            return
                     RetryUtils.retryWithException(
                             () -> nodeEngine.getThisAddress().equals(nodeEngine.getMasterAddress()),
                             new RetryUtils.RetryMaterial(
@@ -262,7 +262,7 @@ public class SeaTunnelServer
                                     true,
                                     exception ->
                                             exception instanceof NullPointerException && isRunning,
-                                    Constant.OPERATION_RETRY_SLEEP)));
+                                    Constant.OPERATION_RETRY_SLEEP));
         } catch (InterruptedException e) {
             LOGGER.info("master node check interrupted");
             return false;
