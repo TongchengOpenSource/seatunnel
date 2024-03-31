@@ -353,7 +353,7 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                 this.textCommandService.getNode().getNodeExtension().createExtensionServices();
         SeaTunnelServer seaTunnelServer =
                 (SeaTunnelServer) extensionServices.get(Constant.SEATUNNEL_SERVICE_NAME);
-        if (!seaTunnelServer.isMasterNode() && shouldBeMaster) {
+        if (shouldBeMaster && !seaTunnelServer.isMasterNode()  ) {
             return null;
         }
         return seaTunnelServer;
@@ -377,6 +377,7 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
         SeaTunnelServer seaTunnelServer = getSeaTunnelServer(true);
         String jobMetrics;
         JobStatus jobStatus;
+        ClassLoaderService classLoaderService;
         if (seaTunnelServer == null) {
             jobMetrics =
                     (String)
@@ -390,15 +391,14 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                                                     getNode().nodeEngine,
                                                     new GetJobStatusOperation(jobId))
                                             .join()];
-            seaTunnelServer = getSeaTunnelServer(false);
+            classLoaderService = getSeaTunnelServer(false).getClassLoaderService();
 
         } else {
             jobMetrics =
                     seaTunnelServer.getCoordinatorService().getJobMetrics(jobId).toJsonString();
             jobStatus = seaTunnelServer.getCoordinatorService().getJobStatus(jobId);
+            classLoaderService = seaTunnelServer.getClassLoaderService();
         }
-
-        ClassLoaderService classLoaderService = seaTunnelServer.getClassLoaderService();
         ClassLoader classLoader =
                 classLoaderService.getClassLoader(
                         jobId, jobImmutableInformation.getPluginJarsUrls());
