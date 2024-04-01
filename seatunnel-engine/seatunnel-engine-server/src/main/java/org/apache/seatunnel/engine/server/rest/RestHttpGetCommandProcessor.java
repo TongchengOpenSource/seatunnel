@@ -272,36 +272,8 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                                 .getMap(Constant.IMAP_RUNNING_JOB_INFO)
                                 .get(Long.valueOf(jobId));
 
-        JobState finishedJobState =
-                (JobState)
-                        this.textCommandService
-                                .getNode()
-                                .getNodeEngine()
-                                .getHazelcastInstance()
-                                .getMap(Constant.IMAP_FINISHED_JOB_STATE)
-                                .get(Long.valueOf(jobId));
         if (!jobId.isEmpty() && jobInfo != null) {
             this.prepareResponse(command, convertToJson(jobInfo, Long.parseLong(jobId)));
-        } else if (!jobId.isEmpty() && finishedJobState != null) {
-            JobMetrics finishedJobMetrics =
-                    (JobMetrics)
-                            this.textCommandService
-                                    .getNode()
-                                    .getNodeEngine()
-                                    .getHazelcastInstance()
-                                    .getMap(Constant.IMAP_FINISHED_JOB_METRICS)
-                                    .get(Long.valueOf(jobId));
-            JobDAGInfo finishedJobDAGInfo =
-                    (JobDAGInfo)
-                            this.textCommandService
-                                    .getNode()
-                                    .getNodeEngine()
-                                    .getHazelcastInstance()
-                                    .getMap(Constant.IMAP_FINISHED_JOB_VERTEX_INFO)
-                                    .get(Long.valueOf(jobId));
-            this.prepareResponse(
-                    command,
-                    convertToJson(finishedJobState, finishedJobMetrics, finishedJobDAGInfo));
         } else {
             this.prepareResponse(command, new JsonObject().add(RestConstant.JOB_ID, jobId));
         }
@@ -374,11 +346,7 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                                         .getSerializationService()
                                         .toObject(jobInfo.getJobImmutableInformation()));
 
-        SeaTunnelServer seaTunnelServer = getSeaTunnelServer(true);
-        ClassLoaderService classLoaderService =
-                seaTunnelServer == null
-                        ? getSeaTunnelServer(false).getClassLoaderService()
-                        : seaTunnelServer.getClassLoaderService();
+        ClassLoaderService classLoaderService = getSeaTunnelServer(false).getClassLoaderService();
         ClassLoader classLoader =
                 classLoaderService.getClassLoader(
                         jobId, jobImmutableInformation.getPluginJarsUrls());
@@ -389,6 +357,7 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                         jobImmutableInformation.getLogicalDag());
         classLoaderService.releaseClassLoader(jobId, jobImmutableInformation.getPluginJarsUrls());
 
+        SeaTunnelServer seaTunnelServer = getSeaTunnelServer(true);
         String jobMetrics;
         JobStatus jobStatus;
         if (seaTunnelServer == null) {
@@ -439,34 +408,6 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                         jobImmutableInformation.isStartWithSavePoint())
                 .add(RestConstant.METRICS, JsonUtil.toJsonObject(getJobMetrics(jobMetrics)));
 
-        return jobInfoJson;
-    }
-
-    private JsonObject convertToJson(
-            JobState finishedJobState,
-            JobMetrics finishedJobMetrics,
-            JobDAGInfo finishedJobDAGInfo) {
-        JsonObject jobInfoJson = new JsonObject();
-        jobInfoJson
-                .add(RestConstant.JOB_ID, String.valueOf(finishedJobState.getJobId()))
-                .add(RestConstant.JOB_NAME, finishedJobState.getJobName())
-                .add(RestConstant.JOB_STATUS, finishedJobState.getJobStatus().toString())
-                .add(RestConstant.ERROR_MSG, finishedJobState.getErrorMessage())
-                .add(
-                        RestConstant.CREATE_TIME,
-                        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                                .format(new Date(finishedJobState.getSubmitTime())))
-                .add(
-                        RestConstant.FINISH_TIME,
-                        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                                .format(new Date(finishedJobState.getFinishTime())))
-                .add(
-                        RestConstant.JOB_DAG,
-                        Json.parse(JsonUtils.toJsonString(finishedJobDAGInfo)).asObject())
-                .add(RestConstant.PLUGIN_JARS_URLS, new JsonArray())
-                .add(
-                        RestConstant.METRICS,
-                        JsonUtil.toJsonObject(getJobMetrics(finishedJobMetrics.toJsonString())));
         return jobInfoJson;
     }
 
