@@ -353,7 +353,7 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                 this.textCommandService.getNode().getNodeExtension().createExtensionServices();
         SeaTunnelServer seaTunnelServer =
                 (SeaTunnelServer) extensionServices.get(Constant.SEATUNNEL_SERVICE_NAME);
-        if (shouldBeMaster && !seaTunnelServer.isMasterNode()) {
+        if (!seaTunnelServer.isMasterNode() && shouldBeMaster) {
             return null;
         }
         return seaTunnelServer;
