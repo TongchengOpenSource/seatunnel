@@ -79,7 +79,7 @@ This process is data transform.
 Transform is decoupled from the execution engine, any transform implement can run into all engines
 without change the code & config, which requires the translation layer to adapt transform and execution engine.
 
-Example：Translation datatype & data
+Example: Translation datatype & data
 
 ```shell
 Original:
