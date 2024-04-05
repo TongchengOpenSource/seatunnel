@@ -50,7 +50,6 @@ import com.hazelcast.spi.impl.operationservice.impl.InvocationFuture;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,7 +109,7 @@ public class PhysicalVertex {
     public volatile boolean isRunning = false;
 
     /** The error throw by physicalVertex, should be set when physicalVertex throw error. */
-    private AtomicReference<String> errorByPhysicalVertex = new AtomicReference<>();
+    private final AtomicReference<String> errorByPhysicalVertex = new AtomicReference<>();
 
     public PhysicalVertex(
             int subTaskGroupIndex,
