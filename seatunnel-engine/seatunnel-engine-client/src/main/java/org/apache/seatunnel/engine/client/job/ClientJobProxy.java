@@ -67,7 +67,7 @@ public class ClientJobProxy implements Job {
                 String.format(
                         "Start submit job, job id: %s, with plugin jar %s",
                         jobImmutableInformation.getJobId(),
-                        jobImmutableInformation.getPluginJarsUrls()));
+                        jobImmutableInformation.getPluginJarIdentifiers()));
         ClientMessage request =
                 SeaTunnelSubmitJobCodec.encodeRequest(
                         jobImmutableInformation.getJobId(),

@@ -30,32 +30,23 @@ import lombok.NonNull;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class JobImmutableInformation implements IdentifiedDataSerializable {
-    private long jobId;
+    private Long jobId;
 
     private String jobName;
 
-    private boolean isStartWithSavePoint;
+    private Boolean isStartWithSavePoint;
 
-    private long createTime;
+    private Long createTime;
 
     private Data logicalDag;
 
     private JobConfig jobConfig;
 
-    private List<URL> pluginJarsUrls;
-
-    // List<URL> pluginJarsUrls is a collection of paths stored on the engine for all connector Jar
-    // packages and third-party Jar packages that the connector relies on.
-    // All storage paths come from the unique identifier obtained after uploading the Jar package
-    // through the client.
     // List<ConnectorJarIdentifier> represents the set of the unique identifier of a Jar package
-    // file,
-    // which contains more information about the Jar package file, including the name of the
-    // connector plugin using the current Jar, the type of the current Jar package, and so on.
-    // TODO: Only use List<ConnectorJarIdentifier> to save more information about the Jar package,
-    // including the storage path of the Jar package on the server.
+    // file
     private List<ConnectorJarIdentifier> connectorJarIdentifiers;
 
     public JobImmutableInformation() {}
@@ -66,7 +57,6 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
             boolean isStartWithSavePoint,
             @NonNull Data logicalDag,
             @NonNull JobConfig jobConfig,
-            @NonNull List<URL> pluginJarsUrls,
             @NonNull List<ConnectorJarIdentifier> connectorJarIdentifiers) {
         this.createTime = System.currentTimeMillis();
         this.jobId = jobId;
@@ -74,7 +64,6 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
         this.isStartWithSavePoint = isStartWithSavePoint;
         this.logicalDag = logicalDag;
         this.jobConfig = jobConfig;
-        this.pluginJarsUrls = pluginJarsUrls;
         this.connectorJarIdentifiers = connectorJarIdentifiers;
     }
 
@@ -83,12 +72,11 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
             String jobName,
             @NonNull Data logicalDag,
             @NonNull JobConfig jobConfig,
-            @NonNull List<URL> pluginJarsUrls,
             @NonNull List<ConnectorJarIdentifier> connectorJarIdentifiers) {
-        this(jobId, jobName, false, logicalDag, jobConfig, pluginJarsUrls, connectorJarIdentifiers);
+        this(jobId, jobName, false, logicalDag, jobConfig,connectorJarIdentifiers);
     }
 
-    public long getJobId() {
+    public Long getJobId() {
         return jobId;
     }
 
@@ -112,8 +100,11 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
         return jobConfig;
     }
 
-    public List<URL> getPluginJarsUrls() {
-        return pluginJarsUrls;
+    public List<String> getStoragePaths() {
+        return connectorJarIdentifiers
+                .stream()
+                .map(ConnectorJarIdentifier::getStoragePath)
+                .collect(Collectors.toList());
     }
 
     public List<ConnectorJarIdentifier> getPluginJarIdentifiers() {
@@ -138,7 +129,6 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
         out.writeLong(createTime);
         IOUtil.writeData(out, logicalDag);
         out.writeObject(jobConfig);
-        out.writeObject(pluginJarsUrls);
         out.writeObject(connectorJarIdentifiers);
     }
 
@@ -150,7 +140,6 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
         createTime = in.readLong();
         logicalDag = IOUtil.readData(in);
         jobConfig = in.readObject();
-        pluginJarsUrls = in.readObject();
         connectorJarIdentifiers = in.readObject();
     }
 }

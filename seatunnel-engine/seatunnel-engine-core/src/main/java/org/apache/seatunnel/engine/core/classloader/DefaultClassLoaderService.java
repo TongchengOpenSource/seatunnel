@@ -43,7 +43,7 @@ public class DefaultClassLoaderService implements ClassLoaderService {
     }
 
     @Override
-    public synchronized ClassLoader getClassLoader(long jobId, Collection<URL> jars) {
+    public synchronized ClassLoader getClassLoader(long jobId, Collection<String> jars) {
         log.debug("Get classloader for job {} with jars {}", jobId, jars);
         if (cacheMode) {
             // with cache mode, all jobs share the same classloader if the jars are the same
@@ -68,7 +68,7 @@ public class DefaultClassLoaderService implements ClassLoaderService {
     }
 
     @Override
-    public synchronized void releaseClassLoader(long jobId, Collection<URL> jars) {
+    public synchronized void releaseClassLoader(long jobId, Collection<String> jars) {
         log.debug("Release classloader for job {} with jars {}", jobId, jars);
         if (cacheMode) {
             // with cache mode, all jobs share the same classloader if the jars are the same
@@ -109,13 +109,13 @@ public class DefaultClassLoaderService implements ClassLoaderService {
                         });
     }
 
-    private String covertJarsToKey(Collection<URL> jars) {
-        return jars.stream().map(URL::toString).sorted().reduce((a, b) -> a + b).orElse("");
+    private String covertJarsToKey(Collection<String> jars) {
+        return jars.stream().sorted().reduce((a, b) -> a + b).orElse("");
     }
 
     /** Only for test */
     @VisibleForTesting
-    Optional<ClassLoader> queryClassLoaderById(long jobId, Collection<URL> jars) {
+    Optional<ClassLoader> queryClassLoaderById(long jobId, Collection<String> jars) {
         if (cacheMode) {
             // with cache mode, all jobs share the same classloader if the jars are the same
             jobId = 1L;

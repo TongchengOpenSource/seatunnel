@@ -104,16 +104,14 @@ public abstract class AbstractJobEnvironment {
 
     public static void addCommonPluginJarsToAction(
             Action action,
-            Set<URL> commonPluginJars,
             Set<ConnectorJarIdentifier> commonJarIdentifiers) {
-        action.getJarUrls().addAll(commonPluginJars);
         action.getConnectorJarIdentifiers().addAll(commonJarIdentifiers);
         if (!action.getUpstream().isEmpty()) {
             action.getUpstream()
                     .forEach(
                             upstreamAction -> {
                                 addCommonPluginJarsToAction(
-                                        upstreamAction, commonPluginJars, commonJarIdentifiers);
+                                        upstreamAction, commonJarIdentifiers);
                             });
         }
     }

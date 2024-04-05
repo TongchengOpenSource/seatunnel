@@ -97,22 +97,22 @@ public class ClientJobExecutionEnvironment extends AbstractJobEnvironment {
             Set<ConnectorJarIdentifier> commonJarIdentifiers =
                     connectorPackageClient.uploadCommonPluginJars(
                             Long.parseLong(jobConfig.getJobContext().getJobId()), commonPluginJars);
-            Set<URL> commonPluginJarUrls = getJarUrlsFromIdentifiers(commonJarIdentifiers);
+//            Set<URL> commonPluginJarUrls = getJarUrlsFromIdentifiers(commonJarIdentifiers);
             Set<ConnectorJarIdentifier> pluginJarIdentifiers = new HashSet<>();
             uploadActionPluginJar(actions, pluginJarIdentifiers);
-            Set<URL> connectorPluginJarUrls = getJarUrlsFromIdentifiers(pluginJarIdentifiers);
+//            Set<URL> connectorPluginJarUrls = getJarUrlsFromIdentifiers(pluginJarIdentifiers);
             connectorJarIdentifiers.addAll(commonJarIdentifiers);
             connectorJarIdentifiers.addAll(pluginJarIdentifiers);
-            jarUrls.addAll(commonPluginJarUrls);
-            jarUrls.addAll(connectorPluginJarUrls);
+//            jarUrls.addAll(commonPluginJarUrls);
+//            jarUrls.addAll(connectorPluginJarUrls);
             actions.forEach(
                     action -> {
                         addCommonPluginJarsToAction(
-                                action, commonPluginJarUrls, commonJarIdentifiers);
+                                action, commonJarIdentifiers);
                     });
         } else {
-            jarUrls.addAll(commonPluginJars);
-            jarUrls.addAll(immutablePair.getRight());
+//            jarUrls.addAll(commonPluginJars);
+//            jarUrls.addAll(immutablePair.getRight());
             actions.forEach(
                     action -> {
                         addCommonPluginJarsToAction(
@@ -138,13 +138,13 @@ public class ClientJobExecutionEnvironment extends AbstractJobEnvironment {
     private void uploadActionPluginJar(List<Action> actions, Set<ConnectorJarIdentifier> result) {
         actions.forEach(
                 action -> {
-                    Set<URL> jarUrls = action.getJarUrls();
+                    Set<URL> jarUrls = getJarUrlsFromIdentifiers(action.getConnectorJarIdentifiers());
                     Set<ConnectorJarIdentifier> jarIdentifiers = uploadPluginJars(jarUrls);
                     result.addAll(jarIdentifiers);
                     // Reset the client URL of the jar package in Set
                     // add the URLs from remote master node
-                    jarUrls.clear();
-                    jarUrls.addAll(getJarUrlsFromIdentifiers(jarIdentifiers));
+//                    jarUrls.clear();
+//                    jarUrls.addAll(getJarUrlsFromIdentifiers(jarIdentifiers));
                     action.getConnectorJarIdentifiers().addAll(jarIdentifiers);
                     if (!action.getUpstream().isEmpty()) {
                         uploadActionPluginJar(action.getUpstream(), result);
@@ -161,7 +161,6 @@ public class ClientJobExecutionEnvironment extends AbstractJobEnvironment {
                         isStartWithSavePoint,
                         seaTunnelHazelcastClient.getSerializationService().toData(logicalDag),
                         jobConfig,
-                        new ArrayList<>(jarUrls),
                         new ArrayList<>(connectorJarIdentifiers));
 
         return jobClient.createJobProxy(jobImmutableInformation);
