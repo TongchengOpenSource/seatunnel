@@ -59,7 +59,6 @@ public abstract class AbstractJobEnvironment {
     protected final JobConfig jobConfig;
 
     protected final IdGenerator idGenerator;
-
     protected final List<URL> commonPluginJars = new ArrayList<>();
 
     public AbstractJobEnvironment(JobConfig jobConfig, boolean isStartWithSavePoint) {

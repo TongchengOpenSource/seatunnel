@@ -101,8 +101,7 @@ public class ClientJobProxy implements Job {
                             new RetryUtils.RetryMaterial(
                                     100000,
                                     true,
-                                    exception ->
-                                            ExceptionUtil.isOperationNeedRetryException(exception),
+                                    ExceptionUtil::isOperationNeedRetryException,
                                     Constant.OPERATION_RETRY_SLEEP));
             if (jobResult == null) {
                 throw new SeaTunnelEngineException("failed to fetch job result");

@@ -22,7 +22,7 @@ After enabling the optimization job submission process configuration item, you d
 - COMMON_PLUGIN_JARS
 - CONNECTOR_PLUGIN_JARS
 
-COMMON_ PLUGIN_ JARS refers to the third-party Jar package that the connector relies on, CONNECTOR_ PLUGIN_ JARS refers to the connector Jar package.
+COMMON_ PLUGIN_ JARS refers to the third-party Jar package that the connector relies on, CONNECTOR_PLUGIN_ JARS refers to the connector Jar package.
 When common jars do not exist in Zeta's `lib`, it can upload the local common jars of the client to the `lib` directory of all engine nodes.
 This way, even if the user does not place a jar on all nodes in Zeta's `lib`, the task can still be executed normally.
 However, we do not recommend relying on the configuration item of opening the optimization job submission process to upload the third-party Jar package that the connector relies on.
