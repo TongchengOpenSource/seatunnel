@@ -25,6 +25,7 @@ import org.apache.seatunnel.engine.core.dag.actions.Action;
 import org.apache.seatunnel.engine.core.dag.logical.LogicalDag;
 import org.apache.seatunnel.engine.core.job.AbstractJobEnvironment;
 import org.apache.seatunnel.engine.core.job.ConnectorJarIdentifier;
+import org.apache.seatunnel.engine.core.job.ConnectorJarType;
 import org.apache.seatunnel.engine.core.job.JobImmutableInformation;
 import org.apache.seatunnel.engine.core.parse.MultipleTableJobConfigParser;
 
@@ -37,6 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 public class ClientJobExecutionEnvironment extends AbstractJobEnvironment {
 
@@ -85,7 +87,8 @@ public class ClientJobExecutionEnvironment extends AbstractJobEnvironment {
 
     @Override
     protected LogicalDag getLogicalDag() {
-        ImmutablePair<List<Action>, Set<URL>> immutablePair = getJobConfigParser().parse(null);
+        ImmutablePair<List<Action>, Set<ConnectorJarIdentifier>> immutablePair =
+                getJobConfigParser().parse(null);
         actions.addAll(immutablePair.getLeft());
         // Enable upload connector jar package to engine server, automatically upload connector Jar
         // packages and dependent third-party Jar packages to the server before job execution.
@@ -107,29 +110,33 @@ public class ClientJobExecutionEnvironment extends AbstractJobEnvironment {
 //            jarUrls.addAll(connectorPluginJarUrls);
             actions.forEach(
                     action -> {
-                        addCommonPluginJarsToAction(
-                                action, commonJarIdentifiers);
+                        addCommonPluginJarsToAction(action, commonJarIdentifiers);
                     });
         } else {
 //            jarUrls.addAll(commonPluginJars);
 //            jarUrls.addAll(immutablePair.getRight());
+            connectorJarIdentifiers.addAll(immutablePair.getRight());
+            Set<ConnectorJarIdentifier> commonJarIdentifiers = commonPluginJars.stream()
+                    .map(jarUrl -> ConnectorJarIdentifier.of(
+                            ConnectorJarType.COMMON_PLUGIN_JAR,
+                            jarUrl.getFile(),
+                            jarUrl.getPath()))
+                    .collect(Collectors.toSet());
+            connectorJarIdentifiers.addAll(commonJarIdentifiers);
             actions.forEach(
-                    action -> {
-                        addCommonPluginJarsToAction(
-                                action, new HashSet<>(commonPluginJars), Collections.emptySet());
-                    });
+                    action -> addCommonPluginJarsToAction(action, commonJarIdentifiers));
         }
         return getLogicalDagGenerator().generate();
     }
 
-    protected Set<ConnectorJarIdentifier> uploadPluginJars(Set<URL> pluginJarUrls) {
+    protected Set<ConnectorJarIdentifier> uploadPluginJars(Set<ConnectorJarIdentifier> pluginJarUrls) {
         Set<ConnectorJarIdentifier> pluginJarIdentifiers = new HashSet<>();
         pluginJarUrls.forEach(
                 pluginJarUrl -> {
                     ConnectorJarIdentifier connectorJarIdentifier =
                             connectorPackageClient.uploadConnectorPluginJar(
                                     Long.parseLong(jobConfig.getJobContext().getJobId()),
-                                    pluginJarUrl);
+                                    pluginJarUrl.getStoragePath());
                     pluginJarIdentifiers.add(connectorJarIdentifier);
                 });
         return pluginJarIdentifiers;
@@ -138,8 +145,8 @@ public class ClientJobExecutionEnvironment extends AbstractJobEnvironment {
     private void uploadActionPluginJar(List<Action> actions, Set<ConnectorJarIdentifier> result) {
         actions.forEach(
                 action -> {
-                    Set<URL> jarUrls = getJarUrlsFromIdentifiers(action.getConnectorJarIdentifiers());
-                    Set<ConnectorJarIdentifier> jarIdentifiers = uploadPluginJars(jarUrls);
+//                    Set<URL> jarUrls = getJarUrlsFromIdentifiers(action.getConnectorJarIdentifiers());
+                    Set<ConnectorJarIdentifier> jarIdentifiers = uploadPluginJars(action.getConnectorJarIdentifiers());
                     result.addAll(jarIdentifiers);
                     // Reset the client URL of the jar package in Set
                     // add the URLs from remote master node

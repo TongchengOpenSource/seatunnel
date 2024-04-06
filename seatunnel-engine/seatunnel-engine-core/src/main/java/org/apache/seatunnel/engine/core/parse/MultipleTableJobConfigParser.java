@@ -17,6 +17,8 @@
 
 package org.apache.seatunnel.engine.core.parse;
 
+import com.beust.jcommander.internal.Sets;
+import org.apache.seatunnel.engine.core.job.ConnectorJarType;
 import org.apache.seatunnel.shade.com.typesafe.config.Config;
 
 import org.apache.seatunnel.api.common.CommonOptions;
@@ -149,16 +151,16 @@ public class MultipleTableJobConfigParser {
                 new JobConfigParser(idGenerator, commonPluginJars, isStartWithSavePoint);
     }
 
-    public ImmutablePair<List<Action>, Set<URL>> parse(ClassLoaderService classLoaderService) {
+    public ImmutablePair<List<Action>, Set<ConnectorJarIdentifier>> parse(ClassLoaderService classLoaderService) {
         List<? extends Config> sourceConfigs =
                 TypesafeConfigUtils.getConfigList(
-                        seaTunnelJobConfig, "source", Collections.emptyList());
+                        seaTunnelJobConfig, CollectionConstants.SOURCE_PLUGIN, Collections.emptyList());
         List<? extends Config> transformConfigs =
                 TypesafeConfigUtils.getConfigList(
-                        seaTunnelJobConfig, "transform", Collections.emptyList());
+                        seaTunnelJobConfig, CollectionConstants.TRANSFORM_PLUGIN, Collections.emptyList());
         List<? extends Config> sinkConfigs =
                 TypesafeConfigUtils.getConfigList(
-                        seaTunnelJobConfig, "sink", Collections.emptyList());
+                        seaTunnelJobConfig, CollectionConstants.SINK_PLUGIN, Collections.emptyList());
 
         List<URL> connectorJars = getConnectorJarList(sourceConfigs, sinkConfigs);
         if (!commonPluginJars.isEmpty()) {
@@ -372,8 +374,14 @@ public class MultipleTableJobConfigParser {
         final ReadonlyConfig readonlyConfig = ReadonlyConfig.fromConfig(config);
         final String factoryId = getFactoryId(readonlyConfig);
         // get jar urls
-        Set<URL> jarUrls = new HashSet<>();
-        jarUrls.addAll(getTransformPluginJarPaths(config));
+        Set<ConnectorJarIdentifier> connectorJarIdentifiers =
+                getTransformPluginJarPaths(config).stream()
+                        .map(
+                                jarUrl -> ConnectorJarIdentifier.of(
+                                        ConnectorJarType.CONNECTOR_PLUGIN_JAR,
+                                        jarUrl.toString()))
+                        .collect(Collectors.toSet());
+
         final List<String> inputIds = getInputIds(readonlyConfig);
 
         List<Tuple2<CatalogTable, Action>> inputs =
@@ -425,8 +433,7 @@ public class MultipleTableJobConfigParser {
                         actionName,
                         new ArrayList<>(inputActions),
                         transform,
-                        jarUrls,
-                        new HashSet<>());
+                        connectorJarIdentifiers);
         transformAction.setParallelism(parallelism);
         tableWithActionMap.put(
                 tableId,
@@ -525,8 +532,13 @@ public class MultipleTableJobConfigParser {
         }
 
         // get jar urls
-        Set<URL> jarUrls = new HashSet<>();
-        jarUrls.addAll(getSinkPluginJarPaths(sinkConfig));
+        Set<ConnectorJarIdentifier> connectorJarIdentifiers =
+                getSinkPluginJarPaths(sinkConfig).stream()
+                        .map(
+                                jarUrl -> ConnectorJarIdentifier.of(
+                                        ConnectorJarType.CONNECTOR_PLUGIN_JAR,
+                                        jarUrl.toString()))
+                        .collect(Collectors.toSet());
         List<SinkAction<?, ?, ?, ?>> sinkActions = new ArrayList<>();
 
         // union
@@ -544,8 +556,7 @@ public class MultipleTableJobConfigParser {
                             inputActions,
                             readonlyConfig,
                             classLoader,
-                            jarUrls,
-                            new HashSet<>(),
+                            connectorJarIdentifiers,
                             factoryId,
                             inputActionSample._2().getParallelism(),
                             configIndex);
@@ -562,7 +573,6 @@ public class MultipleTableJobConfigParser {
                             Collections.singleton(tuple._2()),
                             readonlyConfig,
                             classLoader,
-                            jarUrls,
                             new HashSet<>(),
                             factoryId,
                             tuple._2().getParallelism(),
@@ -589,9 +599,9 @@ public class MultipleTableJobConfigParser {
             return Optional.empty();
         }
         Map<String, SeaTunnelSink> sinks = new HashMap<>();
-        Set<URL> jars =
+        Set<ConnectorJarIdentifier> connectorJarIdentifiers =
                 sinkActions.stream()
-                        .flatMap(a -> a.getJarUrls().stream())
+                        .flatMap(a -> a.getConnectorJarIdentifiers().stream())
                         .collect(Collectors.toSet());
         sinkActions.forEach(
                 action -> {
@@ -609,8 +619,7 @@ public class MultipleTableJobConfigParser {
                         actionName,
                         sinkActions.get(0).getUpstream(),
                         sink,
-                        jars,
-                        new HashSet<>());
+                        connectorJarIdentifiers);
         multiTableAction.setParallelism(sinkActions.get(0).getParallelism());
         return Optional.of(multiTableAction);
     }
@@ -620,7 +629,6 @@ public class MultipleTableJobConfigParser {
             Set<Action> inputActions,
             ReadonlyConfig readonlyConfig,
             ClassLoader classLoader,
-            Set<URL> factoryUrls,
             Set<ConnectorJarIdentifier> connectorJarIdentifiers,
             String factoryId,
             int parallelism,
@@ -641,7 +649,6 @@ public class MultipleTableJobConfigParser {
                         actionName,
                         new ArrayList<>(inputActions),
                         sink,
-                        factoryUrls,
                         connectorJarIdentifiers,
                         actionConfig);
         if (!isStartWithSavePoint) {

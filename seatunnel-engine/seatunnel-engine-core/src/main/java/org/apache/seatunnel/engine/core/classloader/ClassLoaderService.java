@@ -29,7 +29,7 @@ public interface ClassLoaderService {
      * @param jars the jars of the connector plugin
      * @return the classloader of the connector plugin
      */
-    ClassLoader getClassLoader(long jobId, Collection<String> jars);
+    ClassLoader getClassLoader(long jobId, Collection<URL> jars);
 
     /**
      * Release the classloader of the connector plugin.
@@ -37,7 +37,7 @@ public interface ClassLoaderService {
      * @param jobId the job id
      * @param jars the jars of the connector plugin
      */
-    void releaseClassLoader(long jobId, Collection<String> jars);
+    void releaseClassLoader(long jobId, Collection<URL> jars);
 
     /** Close the classloader service. */
     void close();

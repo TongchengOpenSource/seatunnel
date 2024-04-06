@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public abstract class AbstractAction implements Action {
     private String name;
@@ -34,8 +35,6 @@ public abstract class AbstractAction implements Action {
 
     private int parallelism = 1;
 
-    private final Set<URL> jarUrls;
-
     private final Config config;
 
     private final Set<ConnectorJarIdentifier> connectorJarIdentifiers;
@@ -43,31 +42,27 @@ public abstract class AbstractAction implements Action {
     protected AbstractAction(
             long id,
             @NonNull String name,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers) {
-        this(id, name, new ArrayList<>(), jarUrls, connectorJarIdentifiers);
+        this(id, name, new ArrayList<>(), connectorJarIdentifiers);
     }
 
     protected AbstractAction(
             long id,
             @NonNull String name,
             @NonNull List<Action> upstreams,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers) {
-        this(id, name, upstreams, jarUrls, connectorJarIdentifiers, null);
+        this(id, name, upstreams, connectorJarIdentifiers, null);
     }
 
     protected AbstractAction(
             long id,
             @NonNull String name,
             @NonNull List<Action> upstreams,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers,
             Config config) {
         this.id = id;
         this.name = name;
         this.upstreams = upstreams;
-        this.jarUrls = jarUrls;
         this.connectorJarIdentifiers = connectorJarIdentifiers;
         this.config = config;
     }
@@ -109,7 +104,7 @@ public abstract class AbstractAction implements Action {
 
     @Override
     public Set<URL> getJarUrls() {
-        return jarUrls;
+        return connectorJarIdentifiers.stream().map(identifier -> identifier.getStoragePath()).collect(Collectors.toSet());
     }
 
     @Override

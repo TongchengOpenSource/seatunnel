@@ -34,9 +34,8 @@ public class TransformAction extends AbstractAction {
             @NonNull String name,
             @NonNull List<Action> upstreams,
             @NonNull SeaTunnelTransform<?> transform,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers) {
-        super(id, name, upstreams, jarUrls, connectorJarIdentifiers);
+        super(id, name, upstreams, connectorJarIdentifiers);
         this.transform = transform;
     }
 
@@ -44,9 +43,8 @@ public class TransformAction extends AbstractAction {
             long id,
             @NonNull String name,
             @NonNull SeaTunnelTransform<?> transform,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers) {
-        super(id, name, jarUrls, connectorJarIdentifiers);
+        super(id, name, connectorJarIdentifiers);
         this.transform = transform;
     }
 

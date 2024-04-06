@@ -38,9 +38,8 @@ public class SourceAction<T, SplitT extends SourceSplit, StateT extends Serializ
             long id,
             @NonNull String name,
             @NonNull SeaTunnelSource<T, SplitT, StateT> source,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers) {
-        super(id, name, Lists.newArrayList(), jarUrls, connectorJarIdentifiers);
+        super(id, name, Lists.newArrayList(), connectorJarIdentifiers);
         this.source = source;
     }
 

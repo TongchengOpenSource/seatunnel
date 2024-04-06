@@ -51,7 +51,6 @@ public abstract class AbstractJobEnvironment {
     protected final boolean isStartWithSavePoint;
 
     protected final List<Action> actions = new ArrayList<>();
-
     protected final Set<URL> jarUrls = new HashSet<>();
 
     protected final Set<ConnectorJarIdentifier> connectorJarIdentifiers = new HashSet<>();
