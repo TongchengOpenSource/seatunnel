@@ -50,7 +50,6 @@ import com.hazelcast.spi.impl.operationservice.impl.InvocationFuture;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -80,18 +79,9 @@ public class PhysicalVertex {
 
     private final FlakeIdGenerator flakeIdGenerator;
 
-    private final Set<URL> pluginJarsUrls;
 
-    // Set<URL> pluginJarsUrls is a collection of paths stored on the engine for all connector Jar
-    // packages and third-party Jar packages that the connector relies on.
-    // All storage paths come from the unique identifier obtained after uploading the Jar package
-    // through the client.
     // Set<ConnectorJarIdentifier> represents the set of the unique identifier of a Jar package
     // file,
-    // which contains more information about the Jar package file, including the name of the
-    // connector plugin using the current Jar, the type of the current Jar package, and so on.
-    // TODO: Only use Set<ConnectorJarIdentifier>to save more information about the Jar package,
-    // including the storage path of the Jar package on the server.
     private final Set<ConnectorJarIdentifier> connectorJarIdentifiers;
 
     private final IMap<Object, Object> runningJobStateIMap;
@@ -119,7 +109,7 @@ public class PhysicalVertex {
     public volatile boolean isRunning = false;
 
     /** The error throw by physicalVertex, should be set when physicalVertex throw error. */
-    private AtomicReference<String> errorByPhysicalVertex = new AtomicReference<>();
+    private final AtomicReference<String> errorByPhysicalVertex = new AtomicReference<>();
 
     public PhysicalVertex(
             int subTaskGroupIndex,
@@ -129,7 +119,6 @@ public class PhysicalVertex {
             @NonNull FlakeIdGenerator flakeIdGenerator,
             int pipelineId,
             int totalPipelineNum,
-            Set<URL> pluginJarsUrls,
             Set<ConnectorJarIdentifier> connectorJarIdentifiers,
             @NonNull JobImmutableInformation jobImmutableInformation,
             long initializationTimestamp,
@@ -140,7 +129,6 @@ public class PhysicalVertex {
         this.executorService = executorService;
         this.taskGroup = taskGroup;
         this.flakeIdGenerator = flakeIdGenerator;
-        this.pluginJarsUrls = pluginJarsUrls;
         this.connectorJarIdentifiers = connectorJarIdentifiers;
 
         Long[] stateTimestamps = new Long[ExecutionState.values().length];
@@ -346,7 +334,6 @@ public class PhysicalVertex {
                 this.taskGroup.getTaskGroupLocation().getJobId(),
                 flakeIdGenerator.newId(),
                 nodeEngine.getSerializationService().toData(this.taskGroup),
-                this.pluginJarsUrls,
                 this.connectorJarIdentifiers);
     }
 

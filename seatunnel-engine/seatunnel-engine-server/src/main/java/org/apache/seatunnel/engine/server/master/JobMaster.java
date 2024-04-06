@@ -197,14 +197,14 @@ public class JobMaster {
                         "Job %s (%s) needed jar urls %s",
                         jobImmutableInformation.getJobConfig().getName(),
                         jobImmutableInformation.getJobId(),
-                        jobImmutableInformation.getPluginJarsUrls()));
+                        jobImmutableInformation.getPluginJarIdentifiers()));
         ClassLoader appClassLoader = Thread.currentThread().getContextClassLoader();
         ClassLoader classLoader =
                 seaTunnelServer
                         .getClassLoaderService()
                         .getClassLoader(
                                 jobImmutableInformation.getJobId(),
-                                jobImmutableInformation.getPluginJarsUrls());
+                                jobImmutableInformation.getStoragePaths());
         logicalDag =
                 CustomClassLoadedObject.deserializeWithCustomClassLoader(
                         nodeEngine.getSerializationService(),
@@ -214,7 +214,7 @@ public class JobMaster {
                 .getClassLoaderService()
                 .releaseClassLoader(
                         jobImmutableInformation.getJobId(),
-                        jobImmutableInformation.getPluginJarsUrls());
+                        jobImmutableInformation.getStoragePaths());
 
         final Tuple2<PhysicalPlan, Map<Integer, CheckpointPlan>> planTuple =
                 PlanUtils.fromLogicalDAG(

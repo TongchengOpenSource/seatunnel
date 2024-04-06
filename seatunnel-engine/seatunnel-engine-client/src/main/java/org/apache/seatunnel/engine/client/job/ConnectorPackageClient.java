@@ -89,8 +89,8 @@ public class ConnectorPackageClient {
                                 SeaTunnelUploadConnectorJarCodec::decodeResponse));
     }
 
-    public ConnectorJarIdentifier uploadConnectorPluginJar(long jobId, URL connectorPluginJarURL) {
-        Path connectorPluginJarPath = Paths.get(connectorPluginJarURL.getPath().substring(1));
+    public ConnectorJarIdentifier uploadConnectorPluginJar(long jobId, String storagePath) {
+        Path connectorPluginJarPath = Paths.get(storagePath.substring(1));
 
         byte[] data = readFileData(connectorPluginJarPath);
         String fileName = connectorPluginJarPath.getFileName().toString();

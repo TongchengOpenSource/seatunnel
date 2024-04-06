@@ -17,6 +17,8 @@
 
 package org.apache.seatunnel.engine.server.rest;
 
+import org.apache.seatunnel.engine.core.job.ConnectorJarIdentifier;
+import org.apache.seatunnel.engine.core.job.ConnectorJarType;
 import org.apache.seatunnel.shade.com.typesafe.config.Config;
 
 import org.apache.seatunnel.api.common.JobContext;
@@ -40,6 +42,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class RestJobExecutionEnvironment extends AbstractJobEnvironment {
     private final Config seaTunnelJobConfig;
@@ -81,12 +84,26 @@ public class RestJobExecutionEnvironment extends AbstractJobEnvironment {
         ImmutablePair<List<Action>, Set<URL>> immutablePair =
                 getJobConfigParser().parse(seaTunnelServer.getClassLoaderService());
         actions.addAll(immutablePair.getLeft());
-        jarUrls.addAll(commonPluginJars);
-        jarUrls.addAll(immutablePair.getRight());
+//        jarUrls.addAll(commonPluginJars);
+//        jarUrls.addAll(immutablePair.getRight());
+        List<ConnectorJarIdentifier> pluginJarIdentifiers = immutablePair.getRight().stream()
+                .map(jarUrl -> ConnectorJarIdentifier.of(
+                        ConnectorJarType.CONNECTOR_PLUGIN_JAR,
+                        jarUrl.getFile(),
+                        jarUrl.getPath()))
+                .collect(Collectors.toList());
+        connectorJarIdentifiers.addAll(pluginJarIdentifiers);
+
+        Set<ConnectorJarIdentifier> commonJarIdentifiers = commonPluginJars.stream()
+                .map(jarUrl -> ConnectorJarIdentifier.of(
+                        ConnectorJarType.COMMON_PLUGIN_JAR,
+                        jarUrl.getFile(),
+                        jarUrl.getPath()))
+                .collect(Collectors.toSet());
+        connectorJarIdentifiers.addAll(commonJarIdentifiers);
         actions.forEach(
                 action -> {
-                    addCommonPluginJarsToAction(
-                            action, new HashSet<>(commonPluginJars), Collections.emptySet());
+                    addCommonPluginJarsToAction(action, connectorJarIdentifiers);
                 });
         return getLogicalDagGenerator().generate();
     }
@@ -104,7 +121,6 @@ public class RestJobExecutionEnvironment extends AbstractJobEnvironment {
                 isStartWithSavePoint,
                 nodeEngine.getSerializationService().toData(getLogicalDag()),
                 jobConfig,
-                new ArrayList<>(jarUrls),
                 new ArrayList<>(connectorJarIdentifiers));
     }
 }

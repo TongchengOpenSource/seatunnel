@@ -41,8 +41,6 @@ public interface Action extends Serializable {
 
     long getId();
 
-    Set<URL> getJarUrls();
-
     Set<ConnectorJarIdentifier> getConnectorJarIdentifiers();
 
     Config getConfig();

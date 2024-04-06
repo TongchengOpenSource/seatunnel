@@ -18,6 +18,7 @@
 package org.apache.seatunnel.common.utils;
 
 import org.apache.seatunnel.common.exception.CommonError;
+import org.apache.seatunnel.common.exception.CommonErrorCode;
 import org.apache.seatunnel.common.exception.CommonErrorCodeDeprecated;
 import org.apache.seatunnel.common.exception.SeaTunnelRuntimeException;
 
@@ -52,7 +53,7 @@ public class FileUtils {
                                     return path.toUri().toURL();
                                 } catch (MalformedURLException e) {
                                     throw new SeaTunnelRuntimeException(
-                                            CommonErrorCodeDeprecated
+                                            CommonErrorCode
                                                     .REFLECT_CLASS_OPERATION_FAILED,
                                             e);
                                 }

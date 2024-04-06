@@ -67,6 +67,15 @@ public class ConnectorJarIdentifier implements Serializable {
     }
 
     public static ConnectorJarIdentifier of(
+            ConnectorJarType type, String storagePath) {
+        return new ConnectorJarIdentifier(type, storagePath);
+    }
+
+    public static ConnectorJarIdentifier of(String storagePath) {
+        return new ConnectorJarIdentifier(storagePath);
+    }
+
+    public static ConnectorJarIdentifier of(
             byte[] connectorJarID, ConnectorJarType type, String fileName, String storagePath) {
         return new ConnectorJarIdentifier(connectorJarID, type, fileName, storagePath);
     }

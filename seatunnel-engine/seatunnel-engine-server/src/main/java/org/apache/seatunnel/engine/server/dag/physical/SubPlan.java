@@ -291,7 +291,7 @@ public class SubPlan {
                     new RetryUtils.RetryMaterial(
                             Constant.OPERATION_RETRY_TIME,
                             true,
-                            exception -> ExceptionUtil.isOperationNeedRetryException(exception),
+                            ExceptionUtil::isOperationNeedRetryException,
                             Constant.OPERATION_RETRY_SLEEP));
         } catch (Exception e) {
             log.warn(
@@ -486,15 +486,11 @@ public class SubPlan {
         // if PipelineStatus is less than RUNNING, we need cancel it and reschedule.
         getPhysicalVertexList()
                 .forEach(
-                        task -> {
-                            task.restoreExecutionState();
-                        });
+                        PhysicalVertex::restoreExecutionState);
 
         getCoordinatorVertexList()
                 .forEach(
-                        task -> {
-                            task.restoreExecutionState();
-                        });
+                        PhysicalVertex::restoreExecutionState);
 
         if (getPipelineState().ordinal() < PipelineStatus.RUNNING.ordinal()) {
             updatePipelineState(PipelineStatus.CANCELING);

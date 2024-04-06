@@ -68,7 +68,7 @@ public class ExecutionPlanGenerator {
             @NonNull JobImmutableInformation jobImmutableInformation,
             @NonNull EngineConfig engineConfig) {
         checkArgument(
-                logicalPlan.getEdges().size() > 0, "ExecutionPlan Builder must have LogicalPlan.");
+                !logicalPlan.getEdges().isEmpty(), "ExecutionPlan Builder must have LogicalPlan.");
         this.logicalPlan = logicalPlan;
         this.jobImmutableInformation = jobImmutableInformation;
         this.engineConfig = engineConfig;
@@ -107,7 +107,6 @@ public class ExecutionPlanGenerator {
                             action.getName(),
                             new ArrayList<>(),
                             ((SinkAction<?, ?, ?, ?>) action).getSink(),
-                            action.getJarUrls(),
                             action.getConnectorJarIdentifiers(),
                             (SinkConfig) action.getConfig());
         } else if (action instanceof SourceAction) {
@@ -116,7 +115,6 @@ public class ExecutionPlanGenerator {
                             id,
                             action.getName(),
                             ((SourceAction<?, ?, ?>) action).getSource(),
-                            action.getJarUrls(),
                             action.getConnectorJarIdentifiers());
         } else if (action instanceof TransformAction) {
             newAction =
@@ -124,14 +122,12 @@ public class ExecutionPlanGenerator {
                             id,
                             action.getName(),
                             ((TransformAction) action).getTransform(),
-                            action.getJarUrls(),
                             action.getConnectorJarIdentifiers());
         } else if (action instanceof TransformChainAction) {
             newAction =
                     new TransformChainAction(
                             id,
                             action.getName(),
-                            action.getJarUrls(),
                             action.getConnectorJarIdentifiers(),
                             ((TransformChainAction<?>) action).getTransforms());
         } else {
@@ -147,17 +143,15 @@ public class ExecutionPlanGenerator {
         Map<Long, ExecutionVertex> logicalVertexIdToExecutionVertexMap = new HashMap();
 
         List<LogicalEdge> sortedLogicalEdges = new ArrayList<>(logicalEdges);
-        Collections.sort(
-                sortedLogicalEdges,
-                (o1, o2) -> {
-                    if (o1.getInputVertexId() != o2.getInputVertexId()) {
-                        return o1.getInputVertexId() > o2.getInputVertexId() ? 1 : -1;
-                    }
-                    if (o1.getTargetVertexId() != o2.getTargetVertexId()) {
-                        return o1.getTargetVertexId() > o2.getTargetVertexId() ? 1 : -1;
-                    }
-                    return 0;
-                });
+        sortedLogicalEdges.sort((o1, o2) -> {
+            if (o1.getInputVertexId() != o2.getInputVertexId()) {
+                return o1.getInputVertexId() > o2.getInputVertexId() ? 1 : -1;
+            }
+            if (o1.getTargetVertexId() != o2.getTargetVertexId()) {
+                return o1.getTargetVertexId() > o2.getTargetVertexId() ? 1 : -1;
+            }
+            return 0;
+        });
         for (LogicalEdge logicalEdge : sortedLogicalEdges) {
             LogicalVertex logicalInputVertex = logicalEdge.getInputVertex();
             ExecutionVertex executionInputVertex =
@@ -365,11 +359,10 @@ public class ExecutionPlanGenerator {
                 executionEdges,
                 inputVerticesMap,
                 targetVerticesMap);
-        if (transformChainedVertices.size() > 0) {
+        if (!transformChainedVertices.isEmpty()) {
             long newVertexId = idGenerator.getNextId();
             List<SeaTunnelTransform> transforms = new ArrayList<>(transformChainedVertices.size());
             List<String> names = new ArrayList<>(transformChainedVertices.size());
-            Set<URL> jars = new HashSet<>();
             Set<ConnectorJarIdentifier> identifiers = new HashSet<>();
 
             transformChainedVertices.stream()
@@ -382,7 +375,6 @@ public class ExecutionPlanGenerator {
                     .forEach(
                             action -> {
                                 transforms.add(action.getTransform());
-                                jars.addAll(action.getJarUrls());
                                 identifiers.addAll(action.getConnectorJarIdentifiers());
                                 names.add(action.getName());
                             });
@@ -390,7 +382,7 @@ public class ExecutionPlanGenerator {
                     String.format("TransformChain[%s]", String.join("->", names));
             TransformChainAction transformChainAction =
                     new TransformChainAction(
-                            newVertexId, transformChainActionName, jars, identifiers, transforms);
+                            newVertexId, transformChainActionName, identifiers, transforms);
             transformChainAction.setParallelism(currentVertex.getAction().getParallelism());
 
             ExecutionVertex executionVertex =

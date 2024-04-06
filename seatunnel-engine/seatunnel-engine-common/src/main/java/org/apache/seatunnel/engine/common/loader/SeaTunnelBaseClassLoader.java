@@ -27,16 +27,17 @@ public abstract class SeaTunnelBaseClassLoader extends URLClassLoader {
 
     private final Consumer<Throwable> classLoadingExceptionHandler;
 
-    protected SeaTunnelBaseClassLoader(List<URL> urls) {
+    protected SeaTunnelBaseClassLoader(List<String> urls) {
         this(urls.toArray(new URL[0]), SeaTunnelBaseClassLoader.class.getClassLoader());
     }
 
-    protected SeaTunnelBaseClassLoader(URL[] urls, ClassLoader parent) {
+    protected SeaTunnelBaseClassLoader(String[] urls, ClassLoader parent) {
         this(urls, parent, NOOP_EXCEPTION_HANDLER);
     }
 
     protected SeaTunnelBaseClassLoader(
-            URL[] urls, ClassLoader parent, Consumer<Throwable> classLoadingExceptionHandler) {
+            String[] urls, ClassLoader parent, Consumer<Throwable> classLoadingExceptionHandler) {
+
         super(urls, parent);
         this.classLoadingExceptionHandler = classLoadingExceptionHandler;
     }

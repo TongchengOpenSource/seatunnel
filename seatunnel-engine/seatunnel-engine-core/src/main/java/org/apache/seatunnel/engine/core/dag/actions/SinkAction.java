@@ -34,9 +34,8 @@ public class SinkAction<IN, StateT, CommitInfoT, AggregatedCommitInfoT> extends 
             long id,
             @NonNull String name,
             @NonNull SeaTunnelSink<IN, StateT, CommitInfoT, AggregatedCommitInfoT> sink,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers) {
-        this(id, name, new ArrayList<>(), sink, jarUrls, connectorJarIdentifiers);
+        this(id, name, new ArrayList<>(), sink, connectorJarIdentifiers);
     }
 
     public SinkAction(
@@ -44,9 +43,8 @@ public class SinkAction<IN, StateT, CommitInfoT, AggregatedCommitInfoT> extends 
             @NonNull String name,
             @NonNull List<Action> upstreams,
             @NonNull SeaTunnelSink<IN, StateT, CommitInfoT, AggregatedCommitInfoT> sink,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers) {
-        this(id, name, upstreams, sink, jarUrls, connectorJarIdentifiers, null);
+        this(id, name, upstreams, sink, connectorJarIdentifiers, null);
     }
 
     public SinkAction(
@@ -54,10 +52,9 @@ public class SinkAction<IN, StateT, CommitInfoT, AggregatedCommitInfoT> extends 
             @NonNull String name,
             @NonNull List<Action> upstreams,
             @NonNull SeaTunnelSink<IN, StateT, CommitInfoT, AggregatedCommitInfoT> sink,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers,
             SinkConfig config) {
-        super(id, name, upstreams, jarUrls, connectorJarIdentifiers, config);
+        super(id, name, upstreams, connectorJarIdentifiers, config);
         this.sink = sink;
     }
 

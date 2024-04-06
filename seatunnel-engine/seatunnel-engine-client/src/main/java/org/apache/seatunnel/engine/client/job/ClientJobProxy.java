@@ -67,7 +67,7 @@ public class ClientJobProxy implements Job {
                 String.format(
                         "Start submit job, job id: %s, with plugin jar %s",
                         jobImmutableInformation.getJobId(),
-                        jobImmutableInformation.getPluginJarsUrls()));
+                        jobImmutableInformation.getPluginJarIdentifiers()));
         ClientMessage request =
                 SeaTunnelSubmitJobCodec.encodeRequest(
                         jobImmutableInformation.getJobId(),
@@ -101,8 +101,7 @@ public class ClientJobProxy implements Job {
                             new RetryUtils.RetryMaterial(
                                     100000,
                                     true,
-                                    exception ->
-                                            ExceptionUtil.isOperationNeedRetryException(exception),
+                                    ExceptionUtil::isOperationNeedRetryException,
                                     Constant.OPERATION_RETRY_SLEEP));
             if (jobResult == null) {
                 throw new SeaTunnelEngineException("failed to fetch job result");

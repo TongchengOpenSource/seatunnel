@@ -51,7 +51,6 @@ public abstract class AbstractJobEnvironment {
     protected final boolean isStartWithSavePoint;
 
     protected final List<Action> actions = new ArrayList<>();
-
     protected final Set<URL> jarUrls = new HashSet<>();
 
     protected final Set<ConnectorJarIdentifier> connectorJarIdentifiers = new HashSet<>();
@@ -59,7 +58,6 @@ public abstract class AbstractJobEnvironment {
     protected final JobConfig jobConfig;
 
     protected final IdGenerator idGenerator;
-
     protected final List<URL> commonPluginJars = new ArrayList<>();
 
     public AbstractJobEnvironment(JobConfig jobConfig, boolean isStartWithSavePoint) {
@@ -104,16 +102,14 @@ public abstract class AbstractJobEnvironment {
 
     public static void addCommonPluginJarsToAction(
             Action action,
-            Set<URL> commonPluginJars,
             Set<ConnectorJarIdentifier> commonJarIdentifiers) {
-        action.getJarUrls().addAll(commonPluginJars);
         action.getConnectorJarIdentifiers().addAll(commonJarIdentifiers);
         if (!action.getUpstream().isEmpty()) {
             action.getUpstream()
                     .forEach(
                             upstreamAction -> {
                                 addCommonPluginJarsToAction(
-                                        upstreamAction, commonPluginJars, commonJarIdentifiers);
+                                        upstreamAction, commonJarIdentifiers);
                             });
         }
     }

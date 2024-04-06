@@ -35,20 +35,18 @@ public class TransformChainAction<T> extends AbstractAction {
             long id,
             @NonNull String name,
             @NonNull List<Action> upstreams,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers,
             @NonNull List<SeaTunnelTransform<T>> transforms) {
-        super(id, name, upstreams, jarUrls, connectorJarIdentifiers);
+        super(id, name, upstreams, connectorJarIdentifiers);
         this.transforms = transforms;
     }
 
     public TransformChainAction(
             long id,
             @NonNull String name,
-            @NonNull Set<URL> jarUrls,
             @NonNull Set<ConnectorJarIdentifier> connectorJarIdentifiers,
             @NonNull List<SeaTunnelTransform<T>> transforms) {
-        super(id, name, jarUrls, connectorJarIdentifiers);
+        super(id, name, connectorJarIdentifiers);
         this.transforms = transforms;
     }
 

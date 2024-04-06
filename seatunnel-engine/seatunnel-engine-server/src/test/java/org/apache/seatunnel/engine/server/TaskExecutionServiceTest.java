@@ -44,6 +44,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Collections.emptyList;
 import static org.apache.seatunnel.engine.server.execution.ExecutionState.CANCELED;
 import static org.apache.seatunnel.engine.server.execution.ExecutionState.FAILED;
 import static org.apache.seatunnel.engine.server.execution.ExecutionState.FINISHED;
@@ -82,7 +83,7 @@ public class TaskExecutionServiceTest extends AbstractSeaTunnelServerTest {
                         "ts",
                         Lists.newArrayList(testTask1, testTask2));
         CompletableFuture<TaskExecutionState> completableFuture =
-                taskExecutionService.deployLocalTask(ts);
+                taskExecutionService.deployLocalTask(ts, Thread.currentThread().getContextClassLoader(), emptyList());
 
         taskExecutionService.cancelTaskGroup(ts.getTaskGroupLocation());
 

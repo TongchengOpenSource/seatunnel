@@ -283,8 +283,6 @@ public class TaskExecutionService implements DynamicMetricsProvider {
                 jars =
                         serverConnectorPackageClient.getConnectorJarFromLocal(
                                 connectorJarIdentifiers);
-            } else if (!CollectionUtils.isEmpty(taskImmutableInfo.getJars())) {
-                jars = taskImmutableInfo.getJars();
             }
             classLoader =
                     classLoaderService.getClassLoader(
@@ -327,6 +325,7 @@ public class TaskExecutionService implements DynamicMetricsProvider {
         }
     }
 
+    //TODO
     @Deprecated
     public PassiveCompletableFuture<TaskExecutionState> deployLocalTask(
             @NonNull TaskGroup taskGroup) {

@@ -375,15 +375,13 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                                         .toObject(jobInfo.getJobImmutableInformation()));
 
         ClassLoaderService classLoaderService = getSeaTunnelServer(false).getClassLoaderService();
-        ClassLoader classLoader =
-                classLoaderService.getClassLoader(
-                        jobId, jobImmutableInformation.getPluginJarsUrls());
+        ClassLoader classLoader = classLoaderService.getClassLoader(jobId, jobImmutableInformation.getStoragePaths());
         LogicalDag logicalDag =
                 CustomClassLoadedObject.deserializeWithCustomClassLoader(
                         this.textCommandService.getNode().getNodeEngine().getSerializationService(),
                         classLoader,
                         jobImmutableInformation.getLogicalDag());
-        classLoaderService.releaseClassLoader(jobId, jobImmutableInformation.getPluginJarsUrls());
+        classLoaderService.releaseClassLoader(jobId, jobImmutableInformation.getStoragePaths());
 
         SeaTunnelServer seaTunnelServer = getSeaTunnelServer(true);
         String jobMetrics;
@@ -422,13 +420,13 @@ public class RestHttpGetCommandProcessor extends HttpCommandProcessor<HttpGetCom
                 .add(
                         RestConstant.PLUGIN_JARS_URLS,
                         (JsonValue)
-                                jobImmutableInformation.getPluginJarsUrls().stream()
+                                jobImmutableInformation.getPluginJarIdentifiers().stream()
                                         .map(
-                                                url -> {
-                                                    JsonObject jarUrl = new JsonObject();
-                                                    jarUrl.add(
-                                                            RestConstant.JAR_PATH, url.toString());
-                                                    return jarUrl;
+                                                identifier -> {
+                                                    JsonObject storagePath = new JsonObject();
+                                                    storagePath.add(
+                                                            RestConstant.JAR_PATH, identifier.getStoragePath());
+                                                    return storagePath;
                                                 })
                                         .collect(JsonArray::new, JsonArray::add, JsonArray::add))
                 .add(

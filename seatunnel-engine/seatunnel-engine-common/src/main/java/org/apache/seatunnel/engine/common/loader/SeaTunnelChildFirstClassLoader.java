@@ -45,12 +45,12 @@ public class SeaTunnelChildFirstClassLoader extends SeaTunnelBaseClassLoader {
                 "com.fasterxml.jackson"
             };
 
-    public SeaTunnelChildFirstClassLoader(Collection<URL> urls) {
+    public SeaTunnelChildFirstClassLoader(Collection<String> urls) {
         this(urls, DEFAULT_PARENT_FIRST_PATTERNS);
     }
 
     public SeaTunnelChildFirstClassLoader(
-            Collection<URL> urls, String[] alwaysParentFirstPatterns) {
+            Collection<String> urls, String[] alwaysParentFirstPatterns) {
         this(
                 urls.toArray(new URL[0]),
                 SeaTunnelChildFirstClassLoader.class.getClassLoader(),
@@ -67,7 +67,7 @@ public class SeaTunnelChildFirstClassLoader extends SeaTunnelBaseClassLoader {
     }
 
     public SeaTunnelChildFirstClassLoader(
-            URL[] urls,
+            String[] urls,
             ClassLoader parent,
             String[] alwaysParentFirstPatterns,
             Consumer<Throwable> classLoadingExceptionHandler) {
