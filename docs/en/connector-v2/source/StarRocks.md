@@ -19,24 +19,24 @@ delivers the query plan as a parameter to BE nodes, and then obtains data result
 
 ## Options
 
-| name                     |  type  | required | default value     |
-|--------------------------|--------|----------|-------------------|
-| node_urls                | list   | yes      | -                 |
-| username                 | string | yes      | -                 |
-| password                 | string | yes      | -                 |
-| database                 | string | yes      | -                 |
-| table                    | string | yes      | -                 |
-| table_list               | Array  | No       | -                 |
-| scan_filter              | string | no       | -                 |
-| schema                   | config | yes      | -                 |
-| request_tablet_size      | int    | no       | Integer.MAX_VALUE |
-| scan_connect_timeout_ms  | int    | no       | 30000             |
-| scan_query_timeout_sec   | int    | no       | 3600              |
-| scan_keep_alive_min      | int    | no       | 10                |
-| scan_batch_rows          | int    | no       | 1024              |
-| scan_mem_limit           | long   | no       | 2147483648        |
-| max_retries              | int    | no       | 3                 |
-| scan.params.*            | string | no       | -                 |
+|          name           |  type  | required |   default value   |
+|-------------------------|--------|----------|-------------------|
+| node_urls               | list   | yes      | -                 |
+| username                | string | yes      | -                 |
+| password                | string | yes      | -                 |
+| database                | string | yes      | -                 |
+| table                   | string | yes      | -                 |
+| table_list              | Array  | No       | -                 |
+| scan_filter             | string | no       | -                 |
+| schema                  | config | yes      | -                 |
+| request_tablet_size     | int    | no       | Integer.MAX_VALUE |
+| scan_connect_timeout_ms | int    | no       | 30000             |
+| scan_query_timeout_sec  | int    | no       | 3600              |
+| scan_keep_alive_min     | int    | no       | 10                |
+| scan_batch_rows         | int    | no       | 1024              |
+| scan_mem_limit          | long   | no       | 2147483648        |
+| max_retries             | int    | no       | 3                 |
+| scan.params.*           | string | no       | -                 |
 
 ### node_urls [list]
 
@@ -160,18 +160,42 @@ source {
             table = "e2e_table_source"
             schema {
                 fields {
-                    name = string
-                    age = int
+                   BIGINT_COL = BIGINT
+                   LARGEINT_COL = STRING
+                   SMALLINT_COL = SMALLINT
+                   TINYINT_COL = TINYINT
+                   BOOLEAN_COL = BOOLEAN
+                   DECIMAL_COL = "DECIMAL(20, 1)"
+                   DOUBLE_COL = DOUBLE
+                   FLOAT_COL = FLOAT
+                   INT_COL = INT
+                   CHAR_COL = STRING
+                   VARCHAR_11_COL = STRING
+                   STRING_COL = STRING
+                   DATETIME_COL = TIMESTAMP
+                   DATE_COL = DATE
                 }
             },
             scan_filter = ""
         },
         {
-            table = "e2e_table_source2"
+            table = "e2e_table_source_2"
             schema {
                 fields {
-                    name = string
-                    age = int
+                   BIGINT_COL_2 = BIGINT
+                   LARGEINT_COL_2 = STRING
+                   SMALLINT_COL_2 = SMALLINT
+                   TINYINT_COL_2 = TINYINT
+                   BOOLEAN_COL_2 = BOOLEAN
+                   DECIMAL_COL_2 = "DECIMAL(20, 1)"
+                   DOUBLE_COL_2 = DOUBLE
+                   FLOAT_COL_2 = FLOAT
+                   INT_COL_2 = INT
+                   CHAR_COL_2 = STRING
+                   VARCHAR_11_COL_2 = STRING
+                   STRING_COL_2 = STRING
+                   DATETIME_COL_2 = TIMESTAMP
+                   DATE_COL_2 = DATE
                 }
             },
             scan_filter = ""

@@ -66,25 +66,23 @@ public class StarRocksQueryPlanReadClient {
                 sourceConfig.getTableConfigList().stream()
                         .collect(
                                 Collectors.toMap(
-                                        StarRocksSourceTableConfig::getTablePath, Function.identity()));
-
+                                        StarRocksSourceTableConfig::getTablePath,
+                                        Function.identity()));
     }
 
     public List<QueryPartition> findPartitions(TablePath tablePath) {
         List<String> nodeUrls = sourceConfig.getNodeUrls();
         QueryPlan queryPlan =
-                getQueryPlan(genQuerySql(tablePath), nodeUrls.get(new Random().nextInt(nodeUrls.size())), tablePath);
+                getQueryPlan(
+                        genQuerySql(tablePath),
+                        nodeUrls.get(new Random().nextInt(nodeUrls.size())),
+                        tablePath);
         Map<String, List<Long>> be2Tablets = selectBeForTablet(queryPlan);
-        return tabletsMapToPartition(
-                be2Tablets,
-                queryPlan.getQueryPlan(),
-                tablePath);
+        return tabletsMapToPartition(be2Tablets, queryPlan.getQueryPlan(), tablePath);
     }
 
     private List<QueryPartition> tabletsMapToPartition(
-            Map<String, List<Long>> be2Tablets,
-            String opaquedQueryPlan,
-            TablePath table)
+            Map<String, List<Long>> be2Tablets, String opaquedQueryPlan, TablePath table)
             throws IllegalArgumentException {
         int tabletsSize = sourceConfig.getRequestTabletSize();
         List<QueryPartition> partitions = new ArrayList<>();
@@ -106,7 +104,7 @@ public class StarRocksQueryPlanReadClient {
                 first = first + tabletsSize;
                 QueryPartition partitionDefinition =
                         new QueryPartition(
-                                table.getDatabaseName(),
+                                sourceConfig.getDatabase(),
                                 table.getTableName(),
                                 beInfo.getKey(),
                                 partitionTablets,
@@ -147,7 +145,7 @@ public class StarRocksQueryPlanReadClient {
                 new StringBuilder("http://")
                         .append(httpNode)
                         .append("/api/")
-                        .append(tablePath.getDatabaseName())
+                        .append(sourceConfig.getDatabase())
                         .append("/")
                         .append(tablePath.getTableName())
                         .append("/_query_plan")
@@ -193,22 +191,21 @@ public class StarRocksQueryPlanReadClient {
     private String genQuerySql(TablePath tablePath) {
 
         StarRocksSourceTableConfig starRocksSourceTableConfig = tables.get(tablePath);
-        SeaTunnelRowType seaTunnelRowType = starRocksSourceTableConfig.getCatalogTable().getSeaTunnelRowType();
+        SeaTunnelRowType seaTunnelRowType =
+                starRocksSourceTableConfig.getCatalogTable().getSeaTunnelRowType();
         String columns =
                 seaTunnelRowType.getFieldNames().length != 0
                         ? String.join(",", seaTunnelRowType.getFieldNames())
                         : "*";
-        String filter =
-                sourceConfig.getScanFilter().isEmpty()
-                        ? ""
-                        : " where " + starRocksSourceTableConfig.getScanFilter();
+        String scanFilter = starRocksSourceTableConfig.getScanFilter();
+        String filter = scanFilter.isEmpty() ? "" : " where " + scanFilter;
 
         String sql =
                 "select "
                         + columns
                         + " from "
                         + "`"
-                        + tablePath.getDatabaseName()
+                        + sourceConfig.getDatabase()
                         + "`"
                         + "."
                         + "`"

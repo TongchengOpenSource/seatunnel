@@ -70,9 +70,7 @@ public class StarRocksSource
             StarRocksSourceState checkpointState)
             throws Exception {
         return new StartRocksSourceSplitEnumerator(
-                enumeratorContext,
-                sourceConfig,
-                checkpointState);
+                enumeratorContext, sourceConfig, checkpointState);
     }
 
     @Override

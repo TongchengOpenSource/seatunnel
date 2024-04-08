@@ -19,7 +19,6 @@ package org.apache.seatunnel.connectors.seatunnel.starrocks.source;
 
 import org.apache.seatunnel.api.source.SourceSplitEnumerator;
 import org.apache.seatunnel.api.table.catalog.TablePath;
-import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 import org.apache.seatunnel.common.exception.CommonErrorCodeDeprecated;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.StarRocksQueryPlanReadClient;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.model.QueryPartition;
@@ -37,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -66,9 +64,10 @@ public class StartRocksSourceSplitEnumerator
         this.sourceConfig = sourceConfig;
         this.starRocksQueryPlanReadClient = new StarRocksQueryPlanReadClient(sourceConfig);
         this.context = context;
-        List<TablePath> tables = sourceConfig.getTableConfigList().stream()
-                .map(StarRocksSourceTableConfig::getTablePath)
-                .collect(Collectors.toList());
+        List<TablePath> tables =
+                sourceConfig.getTableConfigList().stream()
+                        .map(StarRocksSourceTableConfig::getTablePath)
+                        .collect(Collectors.toList());
         this.pendingSplit = new HashMap<>();
         this.pendingTables = new ConcurrentLinkedQueue<>(tables);
         this.shouldEnumerate = sourceState == null;
@@ -77,7 +76,6 @@ public class StartRocksSourceSplitEnumerator
             this.pendingSplit.putAll(sourceState.getPendingSplit());
             this.pendingTables.addAll(sourceState.getPendingTables());
         }
-
     }
 
     @Override
@@ -85,7 +83,7 @@ public class StartRocksSourceSplitEnumerator
         Set<Integer> readers = context.registeredReaders();
         if (shouldEnumerate) {
 
-            while(!pendingTables.isEmpty()){
+            while (!pendingTables.isEmpty()) {
                 TablePath tablePath = pendingTables.poll();
                 log.info("Splitting table {}.", tablePath);
                 List<StarRocksSourceSplit> newSplits = getStarRocksSourceSplit(tablePath);
@@ -130,8 +128,8 @@ public class StartRocksSourceSplitEnumerator
     @Override
     public StarRocksSourceState snapshotState(long checkpointId) {
         synchronized (stateLock) {
-            return new StarRocksSourceState(shouldEnumerate, pendingSplit,
-                    new ArrayList<>(pendingTables));
+            return new StarRocksSourceState(
+                    shouldEnumerate, pendingSplit, new ArrayList<>(pendingTables));
         }
     }
 

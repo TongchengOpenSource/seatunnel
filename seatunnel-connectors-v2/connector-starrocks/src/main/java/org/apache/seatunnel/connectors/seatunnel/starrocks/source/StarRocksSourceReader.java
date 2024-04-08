@@ -27,8 +27,6 @@ import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.StarRoc
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.model.QueryPartition;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SourceConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
-import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksSourceTableConfig;
-
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,7 +37,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRocksSourceSplit> {
@@ -51,9 +48,7 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
     private Map<String, StarRocksBeReadClient> clientsPools;
     private volatile boolean noMoreSplitsAssignment;
 
-    public StarRocksSourceReader(
-            SourceReader.Context readerContext,
-            SourceConfig sourceConfig) {
+    public StarRocksSourceReader(SourceReader.Context readerContext, SourceConfig sourceConfig) {
         this.pendingSplits = new LinkedList<>();
         this.context = readerContext;
         this.sourceConfig = sourceConfig;
@@ -68,7 +63,6 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
                                                 .getCatalogTable()
                                                 .getSeaTunnelRowType()));
         this.tables = tables;
-
     }
 
     @Override
@@ -117,7 +111,7 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
             clientsPools.put(beAddress, client);
         }
         // open scanner to be
-        TablePath tablePath = TablePath.of(partition.getDatabase(), partition.getTable());
+        TablePath tablePath = TablePath.of(partition.getTable());
         SeaTunnelRowType seaTunnelRowType = tables.get(tablePath);
         client.openScanner(partition, seaTunnelRowType);
         while (client.hasNext()) {

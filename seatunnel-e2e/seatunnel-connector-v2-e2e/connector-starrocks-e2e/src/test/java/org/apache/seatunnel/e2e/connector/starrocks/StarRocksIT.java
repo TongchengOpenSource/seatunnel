@@ -77,6 +77,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
     private static final String DATABASE = "test";
     private static final String URL = "jdbc:mysql://%s:" + SR_PORT;
     private static final String SOURCE_TABLE = "e2e_table_source";
+    private static final String SOURCE_TABLE_3 = "e2e_table_source_3";
     private static final String SINK_TABLE = "e2e_table_sink";
     private static final String SR_DRIVER_JAR =
             "https://repo1.maven.org/maven2/mysql/mysql-connector-java/8.0.16/mysql-connector-java-8.0.16.jar";
@@ -112,11 +113,64 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
                     + "\"storage_format\" = \"DEFAULT\""
                     + ")";
 
+    private static final String DDL_SOURCE_3 =
+            "create table "
+                    + DATABASE
+                    + "."
+                    + SOURCE_TABLE_3
+                    + " (\n"
+                    + "  BIGINT_COL     BIGINT,\n"
+                    + "  LARGEINT_COL   LARGEINT,\n"
+                    + "  SMALLINT_COL   SMALLINT,\n"
+                    + "  TINYINT_COL    TINYINT,\n"
+                    + "  BOOLEAN_COL    BOOLEAN,\n"
+                    + "  DECIMAL_COL    Decimal(12, 1),\n"
+                    + "  DOUBLE_COL     DOUBLE,\n"
+                    + "  FLOAT_COL      FLOAT,\n"
+                    + "  INT_COL        INT,\n"
+                    + "  CHAR_COL       CHAR,\n"
+                    + "  VARCHAR_11_COL VARCHAR(11),\n"
+                    + "  STRING_COL     STRING,\n"
+                    + "  DATETIME_COL   DATETIME,\n"
+                    + "  DATE_COL       DATE\n"
+                    + ")ENGINE=OLAP\n"
+                    + "DUPLICATE KEY(`BIGINT_COL`)\n"
+                    + "DISTRIBUTED BY HASH(`BIGINT_COL`) BUCKETS 1\n"
+                    + "PROPERTIES (\n"
+                    + "\"replication_num\" = \"1\",\n"
+                    + "\"in_memory\" = \"false\","
+                    + "\"storage_format\" = \"DEFAULT\""
+                    + ")";
+
     private static final String INIT_DATA_SQL =
             "insert into "
                     + DATABASE
                     + "."
                     + SOURCE_TABLE
+                    + " (\n"
+                    + "  BIGINT_COL,\n"
+                    + "  LARGEINT_COL,\n"
+                    + "  SMALLINT_COL,\n"
+                    + "  TINYINT_COL,\n"
+                    + "  BOOLEAN_COL,\n"
+                    + "  DECIMAL_COL,\n"
+                    + "  DOUBLE_COL,\n"
+                    + "  FLOAT_COL,\n"
+                    + "  INT_COL,\n"
+                    + "  CHAR_COL,\n"
+                    + "  VARCHAR_11_COL,\n"
+                    + "  STRING_COL,\n"
+                    + "  DATETIME_COL,\n"
+                    + "  DATE_COL\n"
+                    + ")values(\n"
+                    + "\t?,?,?,?,?,?,?,?,?,?,?,?,?,?\n"
+                    + ")";
+
+    private static final String INIT_DATA_SQL_3 =
+            "insert into "
+                    + DATABASE
+                    + "."
+                    + SOURCE_TABLE_3
                     + " (\n"
                     + "  BIGINT_COL,\n"
                     + "  LARGEINT_COL,\n"
@@ -170,7 +224,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
                 .atMost(360, TimeUnit.SECONDS)
                 .untilAsserted(this::initializeJdbcConnection);
         initializeJdbcTable();
-        batchInsertData();
+        batchInsertData(INIT_DATA_SQL);
     }
 
     private static List<SeaTunnelRow> generateTestDataSet() {
@@ -275,6 +329,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
             statement.execute("create database test");
             // create source table
             statement.execute(DDL_SOURCE);
+            statement.execute(DDL_SOURCE_3);
             // create sink table
             // statement.execute(DDL_SINK);
         } catch (SQLException e) {
@@ -282,12 +337,12 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
         }
     }
 
-    private void batchInsertData() {
+    private void batchInsertData(String initDataSql) {
         List<SeaTunnelRow> rows = TEST_DATASET;
         try {
             jdbcConnection.setAutoCommit(false);
             try (PreparedStatement preparedStatement =
-                    jdbcConnection.prepareStatement(INIT_DATA_SQL)) {
+                    jdbcConnection.prepareStatement(initDataSql)) {
                 for (int i = 0; i < rows.size(); i++) {
                     for (int index = 0; index < rows.get(i).getFields().length; index++) {
                         preparedStatement.setObject(index + 1, rows.get(i).getFields()[index]);
@@ -386,16 +441,11 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
             type = {EngineType.SPARK, EngineType.FLINK},
             disabledReason = "Currently SPARK/FLINK do not support multiple table read")
     @TestTemplate
-    public void testKuduMultipleRead(TestContainer container)
+    public void testStarRocksMultipleRead(TestContainer container)
             throws IOException, InterruptedException {
-        initializeKuduTable("kudu_source_table_1");
-        initializeKuduTable("kudu_source_table_2");
-        batchInsertData("kudu_source_table_1");
-        batchInsertData("kudu_source_table_2");
+        batchInsertData(INIT_DATA_SQL_3);
         Container.ExecResult execResult =
-                container.executeJob("/kudu_to_assert_with_multipletable.conf");
+                container.executeJob("/starrocks_to_assert_with_multipletable.conf");
         Assertions.assertEquals(0, execResult.getExitCode());
-        kuduClient.deleteTable("kudu_source_table_1");
-        kuduClient.deleteTable("kudu_source_table_2");
     }
 }
