@@ -49,6 +49,9 @@ public class FilterFieldTransform extends AbstractCatalogSupportTransform {
         super(catalogTable);
         SeaTunnelRowType seaTunnelRowType = catalogTable.getSeaTunnelRowType();
         filterFields = config.get(FilterFieldTransformConfig.KEY_FIELDS);
+        if (CollectionUtils.isEmpty(filterFields)) {
+            throw TransformCommonError.inputFieldsIsEmptyError(getPluginName());
+        }
         List<String> canNotFoundFields =
                 filterFields.stream()
                         .filter(field -> seaTunnelRowType.indexOf(field, false) == -1)

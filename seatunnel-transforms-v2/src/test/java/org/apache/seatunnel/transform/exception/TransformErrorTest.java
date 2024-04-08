@@ -40,6 +40,8 @@ import org.apache.seatunnel.transform.split.SplitTransformFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.Lists;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -177,6 +179,31 @@ public class TransformErrorTest {
         Assertions.assertEquals(
                 "ErrorCode:[TRANSFORM_COMMON-02], ErrorDescription:[The input fields 'age,gender' of 'Filter' transform not found in upstream schema]",
                 exception.getMessage());
+
+        ReadonlyConfig emptyConfig =
+                ReadonlyConfig.fromMap(
+                        new HashMap<String, Object>() {
+                            {
+                                put(
+                                        FilterFieldTransformConfig.KEY_FIELDS.key(),
+                                        Lists.newArrayList());
+                            }
+                        });
+        TableTransformFactoryContext emptyContext =
+                new TableTransformFactoryContext(
+                        Collections.singletonList(table),
+                        emptyConfig,
+                        Thread.currentThread().getContextClassLoader());
+        TransformException emptyException =
+                Assertions.assertThrows(
+                        TransformException.class,
+                        () ->
+                                new FilterFieldTransformFactory()
+                                        .createTransform(emptyContext)
+                                        .createTransform());
+        Assertions.assertEquals(
+                "ErrorCode:[TRANSFORM_COMMON-03], ErrorDescription:[The input fields of 'Filter' transform is empty in upstream schema]",
+                emptyException.getMessage());
     }
 
     @Test

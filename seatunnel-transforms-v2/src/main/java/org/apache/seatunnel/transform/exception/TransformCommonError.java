@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.seatunnel.transform.exception.TransformCommonErrorCode.INPUT_FIELDS_IS_EMPTY;
 import static org.apache.seatunnel.transform.exception.TransformCommonErrorCode.INPUT_FIELDS_NOT_FOUND;
 import static org.apache.seatunnel.transform.exception.TransformCommonErrorCode.INPUT_FIELD_NOT_FOUND;
 
@@ -42,5 +43,11 @@ public class TransformCommonError {
         params.put("fields", String.join(",", fields));
         params.put("transform", transform);
         return new TransformException(INPUT_FIELDS_NOT_FOUND, params);
+    }
+
+    public static TransformException inputFieldsIsEmptyError(String transform) {
+        Map<String, String> params = new HashMap<>();
+        params.put("transform", transform);
+        return new TransformException(INPUT_FIELDS_IS_EMPTY, params);
     }
 }
