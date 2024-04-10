@@ -66,8 +66,9 @@ public class PaimonSourceFactory implements TableSourceFactory {
             TableSource<T, SplitT, StateT> createSource(TableSourceFactoryContext context) {
         ReadonlyConfig config = context.getOptions();
         PaimonConfig sourceConfig = new PaimonConfig(config);
-        PaimonCatalogFactory catalogFactory = new PaimonCatalogFactory();
-        Catalog catalog = catalogFactory.createCatalog(PaimonConfig.CONNECTOR_IDENTITY, config);
+        PaimonCatalogFactory factory = new PaimonCatalogFactory();
+        Catalog catalog = factory.createCatalog(PaimonConfig.CONNECTOR_IDENTITY, config);
+        catalog.open();
         CatalogTable catalogTable = CatalogTableUtil.buildWithConfig(config);
         Table paimonTable = ((PaimonCatalog) catalog).getPaimonTable(catalogTable.getTablePath());
         return () ->

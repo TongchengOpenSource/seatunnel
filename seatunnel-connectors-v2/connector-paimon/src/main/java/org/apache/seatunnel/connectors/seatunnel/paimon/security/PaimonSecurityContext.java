@@ -89,7 +89,7 @@ public class PaimonSecurityContext extends SecurityContext {
                         }
                     });
         }
-        paimonConfig.getHadoopConfProps().forEach((k, v) -> configuration.set(k, v));
+        paimonConfig.getHadoopConfProps().forEach(configuration::set);
         // This configuration is enabled to avoid affecting other hadoop filesystem jobs
         // refer:
         // org.apache.seatunnel.connectors.seatunnel.file.hadoop.HadoopFileSystemProxy.createConfiguration
