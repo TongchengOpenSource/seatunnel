@@ -64,11 +64,11 @@ public class PaimonSinkConfig extends PaimonConfig {
                     .withDescription(
                             "Properties passed through to paimon table initialization, such as 'file.format', 'bucket'(org.apache.paimon.CoreOptions)");
 
-    private SchemaSaveMode schemaSaveMode;
-    private DataSaveMode dataSaveMode;
-    private List<String> primaryKeys;
-    private List<String> partitionKeys;
-    private Map<String, String> writeProps;
+    private final SchemaSaveMode schemaSaveMode;
+    private final DataSaveMode dataSaveMode;
+    private final List<String> primaryKeys;
+    private final List<String> partitionKeys;
+    private final Map<String, String> writeProps;
 
     public PaimonSinkConfig(ReadonlyConfig readonlyConfig) {
         super(readonlyConfig);
