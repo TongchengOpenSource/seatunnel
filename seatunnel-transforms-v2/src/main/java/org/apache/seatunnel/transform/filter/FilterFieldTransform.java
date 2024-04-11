@@ -52,8 +52,17 @@ public class FilterFieldTransform extends AbstractCatalogSupportTransform {
         fields = config.get(FilterFieldTransformConfig.KEY_FIELDS).toArray(new String[0]);
         List<String> canNotFoundFields =
                 Arrays.stream(fields)
-                        .filter(field -> seaTunnelRowType.indexOf(field, false) == -1)
+                        .filter(
+                                field -> {
+                                    try {
+                                        seaTunnelRowType.indexOf(field);
+                                        return false;
+                                    } catch (Exception e) {
+                                        return true;
+                                    }
+                                })
                         .collect(Collectors.toList());
+
         if (!CollectionUtils.isEmpty(canNotFoundFields)) {
             throw TransformCommonError.cannotFindInputFieldsError(
                     getPluginName(), canNotFoundFields);
@@ -72,10 +81,7 @@ public class FilterFieldTransform extends AbstractCatalogSupportTransform {
         for (int i = 0; i < fields.length; i++) {
             values[i] = inputRow.getField(inputValueIndex[i]);
         }
-        SeaTunnelRow outputRow = new SeaTunnelRow(values);
-        outputRow.setRowKind(inputRow.getRowKind());
-        outputRow.setTableId(inputRow.getTableId());
-        return outputRow;
+        return new SeaTunnelRow(values);
     }
 
     @Override
@@ -88,13 +94,17 @@ public class FilterFieldTransform extends AbstractCatalogSupportTransform {
 
         inputValueIndex = new int[filterFields.size()];
         ArrayList<String> outputFieldNames = new ArrayList<>();
-        List<Column> inputColumns = inputCatalogTable.getTableSchema().getColumns();
         for (int i = 0; i < filterFields.size(); i++) {
             String field = filterFields.get(i);
             int inputFieldIndex = seaTunnelRowType.indexOf(field);
+            if (inputFieldIndex == -1) {
+                throw TransformCommonError.cannotFindInputFieldError(getPluginName(), field);
+            }
             inputValueIndex[i] = inputFieldIndex;
-            outputColumns.add(inputColumns.get(inputFieldIndex).copy());
-            outputFieldNames.add(inputColumns.get(inputFieldIndex).getName());
+            outputColumns.add(
+                    inputCatalogTable.getTableSchema().getColumns().get(inputFieldIndex).copy());
+            outputFieldNames.add(
+                    inputCatalogTable.getTableSchema().getColumns().get(inputFieldIndex).getName());
         }
 
         List<ConstraintKey> outputConstraintKeys =
@@ -113,9 +123,10 @@ public class FilterFieldTransform extends AbstractCatalogSupportTransform {
                         .collect(Collectors.toList());
 
         PrimaryKey copiedPrimaryKey = null;
-        PrimaryKey primaryKey = inputCatalogTable.getTableSchema().getPrimaryKey();
-        if (primaryKey != null && outputFieldNames.containsAll(primaryKey.getColumnNames())) {
-            copiedPrimaryKey = primaryKey.copy();
+        if (inputCatalogTable.getTableSchema().getPrimaryKey() != null
+                && outputFieldNames.containsAll(
+                        inputCatalogTable.getTableSchema().getPrimaryKey().getColumnNames())) {
+            copiedPrimaryKey = inputCatalogTable.getTableSchema().getPrimaryKey().copy();
         }
 
         return TableSchema.builder()
