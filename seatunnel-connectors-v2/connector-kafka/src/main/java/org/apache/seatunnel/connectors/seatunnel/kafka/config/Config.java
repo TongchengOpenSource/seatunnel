@@ -68,6 +68,13 @@ public class Config {
                     .withDescription(
                             "Kafka consumer group id, used to distinguish different consumer groups.");
 
+    public static final Option<Long> POLL_TIME_OUT =
+            Options.key("poll.time.out")
+                    .longType()
+                    .defaultValue(10000L)
+                    .withDescription(
+                            "The maximum time to block (must not be greater than Long.MAX_VALUE milliseconds)");
+
     public static final Option<Boolean> COMMIT_ON_CHECKPOINT =
             Options.key("commit_on_checkpoint")
                     .booleanType()

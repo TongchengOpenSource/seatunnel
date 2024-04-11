@@ -67,6 +67,7 @@ import static org.apache.seatunnel.connectors.seatunnel.kafka.config.Config.KAFK
 import static org.apache.seatunnel.connectors.seatunnel.kafka.config.Config.KEY_PARTITION_DISCOVERY_INTERVAL_MILLIS;
 import static org.apache.seatunnel.connectors.seatunnel.kafka.config.Config.MESSAGE_FORMAT_ERROR_HANDLE_WAY_OPTION;
 import static org.apache.seatunnel.connectors.seatunnel.kafka.config.Config.PATTERN;
+import static org.apache.seatunnel.connectors.seatunnel.kafka.config.Config.POLL_TIME_OUT;
 import static org.apache.seatunnel.connectors.seatunnel.kafka.config.Config.START_MODE;
 import static org.apache.seatunnel.connectors.seatunnel.kafka.config.Config.START_MODE_OFFSETS;
 import static org.apache.seatunnel.connectors.seatunnel.kafka.config.Config.START_MODE_TIMESTAMP;
@@ -102,6 +103,7 @@ public class KafkaSourceConfig implements Serializable {
         consumerMetadata.setPattern(readonlyConfig.get(PATTERN));
         consumerMetadata.setProperties(new Properties());
         consumerMetadata.setConsumerGroup(readonlyConfig.get(CONSUMER_GROUP));
+        consumerMetadata.setPollTimeOut(readonlyConfig.get(POLL_TIME_OUT));
         consumerMetadata.setCommitOnCheckpoint(readonlyConfig.get(COMMIT_ON_CHECKPOINT));
         // parse start mode
         readonlyConfig

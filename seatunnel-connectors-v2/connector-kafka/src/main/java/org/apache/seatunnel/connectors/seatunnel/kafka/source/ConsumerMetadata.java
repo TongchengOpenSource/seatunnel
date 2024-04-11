@@ -34,6 +34,7 @@ public class ConsumerMetadata implements Serializable {
     private String topic;
     private boolean isPattern = false;
     private String bootstrapServers;
+    private Long pollTimeOut;
     private Properties properties;
     private String consumerGroup;
     private boolean commitOnCheckpoint = false;

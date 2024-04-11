@@ -53,8 +53,6 @@ import java.util.stream.Collectors;
 public class KafkaSourceReader implements SourceReader<SeaTunnelRow, KafkaSourceSplit> {
 
     private static final long THREAD_WAIT_TIME = 500L;
-    private static final long POLL_TIMEOUT = 10000L;
-
     private final SourceReader.Context context;
     private final ConsumerMetadata metadata;
     private final Set<KafkaSourceSplit> sourceSplits;
@@ -102,7 +100,7 @@ public class KafkaSourceReader implements SourceReader<SeaTunnelRow, KafkaSource
             return;
         }
 
-        while (pendingPartitionsQueue.size() != 0) {
+        while (!pendingPartitionsQueue.isEmpty()) {
             sourceSplits.add(pendingPartitionsQueue.poll());
         }
         sourceSplits.forEach(
@@ -135,7 +133,8 @@ public class KafkaSourceReader implements SourceReader<SeaTunnelRow, KafkaSource
                                                 }
                                                 ConsumerRecords<byte[], byte[]> records =
                                                         consumer.poll(
-                                                                Duration.ofMillis(POLL_TIMEOUT));
+                                                                Duration.ofMillis(
+                                                                        metadata.getPollTimeOut()));
                                                 for (TopicPartition partition : partitions) {
                                                     List<ConsumerRecord<byte[], byte[]>>
                                                             recordList = records.records(partition);
