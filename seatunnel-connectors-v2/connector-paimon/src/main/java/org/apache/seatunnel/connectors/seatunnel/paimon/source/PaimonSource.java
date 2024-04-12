@@ -29,13 +29,10 @@ import org.apache.seatunnel.connectors.seatunnel.paimon.utils.RowTypeConverter;
 
 import org.apache.paimon.table.Table;
 
-import com.google.auto.service.AutoService;
-
 import java.util.Collections;
 import java.util.List;
 
 /** Paimon connector source class. */
-@AutoService(SeaTunnelSource.class)
 public class PaimonSource
         implements SeaTunnelSource<SeaTunnelRow, PaimonSourceSplit, PaimonSourceState> {
 
