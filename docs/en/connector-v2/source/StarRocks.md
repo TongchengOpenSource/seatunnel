@@ -158,7 +158,7 @@ source {
     table_list = [
         {
             table = "e2e_table_source"
-            schema {
+            schema = {
                 fields {
                    BIGINT_COL = BIGINT
                    LARGEINT_COL = STRING
@@ -180,7 +180,7 @@ source {
         },
         {
             table = "e2e_table_source_2"
-            schema {
+            schema = {
                 fields {
                    BIGINT_COL_2 = BIGINT
                    LARGEINT_COL_2 = STRING

@@ -70,6 +70,7 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
         while (!pendingSplits.isEmpty()) {
             synchronized (output.getCheckpointLock()) {
                 StarRocksSourceSplit split = pendingSplits.poll();
+                System.out.println("split: " + split);
                 read(split, output);
             }
         }
@@ -90,6 +91,7 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
 
     @Override
     public void addSplits(List<StarRocksSourceSplit> splits) {
+        splits.forEach(System.out::println);
         pendingSplits.addAll(splits);
     }
 
