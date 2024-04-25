@@ -20,7 +20,6 @@ package org.apache.seatunnel.connectors.seatunnel.starrocks.source;
 import org.apache.seatunnel.api.source.Boundedness;
 import org.apache.seatunnel.api.source.Collector;
 import org.apache.seatunnel.api.source.SourceReader;
-import org.apache.seatunnel.api.table.catalog.TablePath;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.StarRocksBeReadClient;
@@ -44,7 +43,7 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
     private final Queue<StarRocksSourceSplit> pendingSplits;
     private final SourceReader.Context context;
     private final SourceConfig sourceConfig;
-    private final Map<TablePath, SeaTunnelRowType> tables;
+    private final Map<String, SeaTunnelRowType> tables;
     private Map<String, StarRocksBeReadClient> clientsPools;
     private volatile boolean noMoreSplitsAssignment;
 
@@ -52,13 +51,13 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
         this.pendingSplits = new LinkedList<>();
         this.context = readerContext;
         this.sourceConfig = sourceConfig;
-        Map<TablePath, SeaTunnelRowType> tables = new HashMap<>();
+        Map<String, SeaTunnelRowType> tables = new HashMap<>();
         sourceConfig
                 .getTableConfigList()
                 .forEach(
                         starRocksSourceTableConfig ->
                                 tables.put(
-                                        starRocksSourceTableConfig.getTablePath(),
+                                        starRocksSourceTableConfig.getTable(),
                                         starRocksSourceTableConfig
                                                 .getCatalogTable()
                                                 .getSeaTunnelRowType()));
@@ -113,8 +112,7 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
             clientsPools.put(beAddress, client);
         }
         // open scanner to be
-        TablePath tablePath = TablePath.of(partition.getTable());
-        SeaTunnelRowType seaTunnelRowType = tables.get(tablePath);
+        SeaTunnelRowType seaTunnelRowType = tables.get(partition.getTable());
         client.openScanner(partition, seaTunnelRowType);
         while (client.hasNext()) {
             SeaTunnelRow seaTunnelRow = client.getNext();

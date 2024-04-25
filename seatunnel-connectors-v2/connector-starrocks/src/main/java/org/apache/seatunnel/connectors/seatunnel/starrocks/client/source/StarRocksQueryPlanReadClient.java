@@ -17,7 +17,6 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.client.source;
 
-import org.apache.seatunnel.api.table.catalog.TablePath;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 import org.apache.seatunnel.common.utils.JsonUtils;
 import org.apache.seatunnel.common.utils.RetryUtils;
@@ -50,7 +49,7 @@ public class StarRocksQueryPlanReadClient {
     private RetryUtils.RetryMaterial retryMaterial;
     private SourceConfig sourceConfig;
     private final HttpHelper httpHelper = new HttpHelper();
-    private final Map<TablePath, StarRocksSourceTableConfig> tables;
+    private final Map<String, StarRocksSourceTableConfig> tables;
 
     private static final long DEFAULT_SLEEP_TIME_MS = 1000L;
 
@@ -66,23 +65,22 @@ public class StarRocksQueryPlanReadClient {
                 sourceConfig.getTableConfigList().stream()
                         .collect(
                                 Collectors.toMap(
-                                        StarRocksSourceTableConfig::getTablePath,
-                                        Function.identity()));
+                                        StarRocksSourceTableConfig::getTable, Function.identity()));
     }
 
-    public List<QueryPartition> findPartitions(TablePath tablePath) {
+    public List<QueryPartition> findPartitions(String table) {
         List<String> nodeUrls = sourceConfig.getNodeUrls();
         QueryPlan queryPlan =
                 getQueryPlan(
-                        genQuerySql(tablePath),
+                        genQuerySql(table),
                         nodeUrls.get(new Random().nextInt(nodeUrls.size())),
-                        tablePath);
+                        table);
         Map<String, List<Long>> be2Tablets = selectBeForTablet(queryPlan);
-        return tabletsMapToPartition(be2Tablets, queryPlan.getQueryPlan(), tablePath);
+        return tabletsMapToPartition(be2Tablets, queryPlan.getQueryPlan(), table);
     }
 
     private List<QueryPartition> tabletsMapToPartition(
-            Map<String, List<Long>> be2Tablets, String opaquedQueryPlan, TablePath table)
+            Map<String, List<Long>> be2Tablets, String opaquedQueryPlan, String table)
             throws IllegalArgumentException {
         int tabletsSize = sourceConfig.getRequestTabletSize();
         List<QueryPartition> partitions = new ArrayList<>();
@@ -105,7 +103,7 @@ public class StarRocksQueryPlanReadClient {
                 QueryPartition partitionDefinition =
                         new QueryPartition(
                                 sourceConfig.getDatabase(),
-                                table.getTableName(),
+                                table,
                                 beInfo.getKey(),
                                 partitionTablets,
                                 opaquedQueryPlan);
@@ -140,14 +138,14 @@ public class StarRocksQueryPlanReadClient {
         return beXTablets;
     }
 
-    private QueryPlan getQueryPlan(String querySQL, String httpNode, TablePath tablePath) {
+    private QueryPlan getQueryPlan(String querySQL, String httpNode, String table) {
         String url =
                 new StringBuilder("http://")
                         .append(httpNode)
                         .append("/api/")
                         .append(sourceConfig.getDatabase())
                         .append("/")
-                        .append(tablePath.getTableName())
+                        .append(table)
                         .append("/_query_plan")
                         .toString();
 
@@ -188,9 +186,9 @@ public class StarRocksQueryPlanReadClient {
         return headerMap;
     }
 
-    private String genQuerySql(TablePath tablePath) {
+    private String genQuerySql(String table) {
 
-        StarRocksSourceTableConfig starRocksSourceTableConfig = tables.get(tablePath);
+        StarRocksSourceTableConfig starRocksSourceTableConfig = tables.get(table);
         SeaTunnelRowType seaTunnelRowType =
                 starRocksSourceTableConfig.getCatalogTable().getSeaTunnelRowType();
         String columns =
@@ -209,7 +207,7 @@ public class StarRocksQueryPlanReadClient {
                         + "`"
                         + "."
                         + "`"
-                        + tablePath.getTableName()
+                        + table
                         + "`"
                         + filter;
         log.debug("Generate query sql '{}'.", sql);

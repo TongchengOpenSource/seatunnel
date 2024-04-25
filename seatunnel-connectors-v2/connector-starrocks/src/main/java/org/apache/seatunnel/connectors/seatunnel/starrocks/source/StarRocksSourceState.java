@@ -17,8 +17,6 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.source;
 
-import org.apache.seatunnel.api.table.catalog.TablePath;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,5 +31,5 @@ import java.util.Map;
 public class StarRocksSourceState implements Serializable {
     private boolean shouldEnumerate;
     private Map<Integer, List<StarRocksSourceSplit>> pendingSplit;
-    private List<TablePath> pendingTables;
+    private List<String> pendingTables;
 }
