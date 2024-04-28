@@ -374,8 +374,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
         List<SeaTunnelRow> rows = TEST_DATASET;
         try {
             jdbcConnection.setAutoCommit(false);
-            try (PreparedStatement preparedStatement =
-                    jdbcConnection.prepareStatement(initSQL)) {
+            try (PreparedStatement preparedStatement = jdbcConnection.prepareStatement(initSQL)) {
                 for (int i = 0; i < rows.size(); i++) {
                     for (int index = 0; index < rows.get(i).getFields().length; index++) {
                         preparedStatement.setObject(index + 1, rows.get(i).getFields()[index]);
