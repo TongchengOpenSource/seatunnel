@@ -249,7 +249,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
                 .atMost(360, TimeUnit.SECONDS)
                 .untilAsserted(this::initializeJdbcConnection);
         initializeJdbcTable();
-        batchInsertData();
+        batchInsertData(INIT_DATA_SQL);
     }
 
     private static List<SeaTunnelRow> generateTestDataSet() {
@@ -370,12 +370,12 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
         }
     }
 
-    private void batchInsertData() {
+    private void batchInsertData(String initSQL) {
         List<SeaTunnelRow> rows = TEST_DATASET;
         try {
             jdbcConnection.setAutoCommit(false);
             try (PreparedStatement preparedStatement =
-                    jdbcConnection.prepareStatement(INIT_DATA_SQL)) {
+                    jdbcConnection.prepareStatement(initSQL)) {
                 for (int i = 0; i < rows.size(); i++) {
                     for (int index = 0; index < rows.get(i).getFields().length; index++) {
                         preparedStatement.setObject(index + 1, rows.get(i).getFields()[index]);
