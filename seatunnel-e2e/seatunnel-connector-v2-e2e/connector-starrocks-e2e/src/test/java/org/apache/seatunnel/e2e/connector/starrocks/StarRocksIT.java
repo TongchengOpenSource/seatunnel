@@ -113,6 +113,31 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
                     + "\"storage_format\" = \"DEFAULT\""
                     + ")";
 
+    private static final String DDL_FAKE_SINK_TABLE =
+            "create table "
+                    + DATABASE
+                    + "."
+                    + "fake_table_sink"
+                    + " (\n"
+                    + "  id     BIGINT,\n"
+                    + "  c_string   STRING,\n"
+                    + "  c_boolean    BOOLEAN,\n"
+                    + "  c_tinyint    TINYINT,\n"
+                    + "  c_int        INT,\n"
+                    + "  c_bigint     BIGINT,\n"
+                    + "  c_float      FLOAT,\n"
+                    + "  c_double     DOUBLE,\n"
+                    + "  c_decimal    Decimal(2, 1),\n"
+                    + "  c_date       DATE\n"
+                    + ")ENGINE=OLAP\n"
+                    + "DUPLICATE KEY(`id`)\n"
+                    + "DISTRIBUTED BY HASH(`id`) BUCKETS 1\n"
+                    + "PROPERTIES (\n"
+                    + "\"replication_num\" = \"1\",\n"
+                    + "\"in_memory\" = \"false\","
+                    + "\"storage_format\" = \"DEFAULT\""
+                    + ")";
+
     private static final String DDL_SOURCE_3 =
             "create table "
                     + DATABASE
@@ -224,7 +249,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
                 .atMost(360, TimeUnit.SECONDS)
                 .untilAsserted(this::initializeJdbcConnection);
         initializeJdbcTable();
-        batchInsertData(INIT_DATA_SQL);
+        batchInsertData();
     }
 
     private static List<SeaTunnelRow> generateTestDataSet() {
@@ -309,6 +334,13 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
         }
     }
 
+    @TestTemplate
+    public void testSinkWithCatalogTableNameOnly(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult = container.executeJob("/fake-to-starrocks.conf");
+        Assertions.assertEquals(0, execResult.getExitCode(), execResult.getStderr());
+    }
+
     private void initializeJdbcConnection()
             throws SQLException, ClassNotFoundException, MalformedURLException,
                     InstantiationException, IllegalAccessException {
@@ -338,12 +370,12 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
         }
     }
 
-    private void batchInsertData(String initDataSql) {
+    private void batchInsertData() {
         List<SeaTunnelRow> rows = TEST_DATASET;
         try {
             jdbcConnection.setAutoCommit(false);
             try (PreparedStatement preparedStatement =
-                    jdbcConnection.prepareStatement(initDataSql)) {
+                    jdbcConnection.prepareStatement(INIT_DATA_SQL)) {
                 for (int i = 0; i < rows.size(); i++) {
                     for (int index = 0; index < rows.get(i).getFields().length; index++) {
                         preparedStatement.setObject(index + 1, rows.get(i).getFields()[index]);

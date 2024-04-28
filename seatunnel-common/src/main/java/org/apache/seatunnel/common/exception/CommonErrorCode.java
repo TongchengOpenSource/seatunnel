@@ -29,6 +29,7 @@ public enum CommonErrorCode implements SeaTunnelErrorCode {
 
     UNSUPPORTED_DATA_TYPE(
             "COMMON-07", "'<identifier>' unsupported data type '<dataType>' of '<field>'"),
+    UNSUPPORTED_ENCODING("COMMON-08", "unsupported encoding '<encoding>'"),
     WRITER_OPERATION_FAILED(
             "COMMON-11", "Sink writer operation failed, such as (open, close) etc..."),
     CONVERT_TO_SEATUNNEL_TYPE_ERROR(
