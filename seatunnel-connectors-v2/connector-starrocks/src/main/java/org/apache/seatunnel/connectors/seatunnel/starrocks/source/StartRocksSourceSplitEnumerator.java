@@ -171,11 +171,9 @@ public class StartRocksSourceSplitEnumerator
             if (assignmentForReader != null && !assignmentForReader.isEmpty()) {
                 log.info(
                         "Assign splits {} to reader {}",
-                        String.join(
-                                ",",
-                                assignmentForReader.stream()
-                                        .map(StarRocksSourceSplit::getSplitId)
-                                        .collect(Collectors.toList())),
+                        assignmentForReader.stream()
+                                .map(StarRocksSourceSplit::getSplitId)
+                                .collect(Collectors.joining(",")),
                         reader);
                 try {
                     context.assignSplit(reader, assignmentForReader);

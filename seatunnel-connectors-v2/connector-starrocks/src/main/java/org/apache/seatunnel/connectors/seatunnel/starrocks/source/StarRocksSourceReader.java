@@ -69,7 +69,6 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
         while (!pendingSplits.isEmpty()) {
             synchronized (output.getCheckpointLock()) {
                 StarRocksSourceSplit split = pendingSplits.poll();
-                System.out.println("split: " + split);
                 read(split, output);
             }
         }
@@ -90,7 +89,6 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
 
     @Override
     public void addSplits(List<StarRocksSourceSplit> splits) {
-        splits.forEach(System.out::println);
         pendingSplits.addAll(splits);
     }
 
@@ -114,8 +112,11 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
         // open scanner to be
         SeaTunnelRowType seaTunnelRowType = tables.get(partition.getTable());
         client.openScanner(partition, seaTunnelRowType);
+        System.out.println(
+                "partition: " + partition.toString() + "client.hasNext(): " + client.hasNext());
         while (client.hasNext()) {
             SeaTunnelRow seaTunnelRow = client.getNext();
+            seaTunnelRow.setTableId(partition.getTable());
             output.collect(seaTunnelRow);
         }
     }

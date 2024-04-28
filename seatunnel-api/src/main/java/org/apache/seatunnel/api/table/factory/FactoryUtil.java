@@ -82,6 +82,9 @@ public final class FactoryUtil {
                 catalogTables =
                         CatalogTableUtil.convertDataTypeToCatalogTables(seaTunnelDataType, tableId);
             }
+            for (CatalogTable catalogTable : catalogTables) {
+                System.out.println("catalogTable: " + catalogTable.toString());
+            }
             LOG.info(
                     "get the CatalogTable from source {}: {}",
                     source.getPluginName(),

@@ -19,12 +19,18 @@ package org.apache.seatunnel.connectors.seatunnel.starrocks.config;
 
 import org.apache.seatunnel.api.configuration.ReadonlyConfig;
 import org.apache.seatunnel.api.table.catalog.CatalogTable;
-import org.apache.seatunnel.api.table.catalog.CatalogTableUtil;
+import org.apache.seatunnel.api.table.catalog.TableIdentifier;
+import org.apache.seatunnel.api.table.catalog.TablePath;
+import org.apache.seatunnel.api.table.catalog.TableSchema;
+import org.apache.seatunnel.api.table.catalog.schema.ReadonlyConfigParser;
+import org.apache.seatunnel.api.table.catalog.schema.TableSchemaOptions;
 
 import com.google.common.collect.Lists;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -47,10 +53,20 @@ public class StarRocksSourceTableConfig implements Serializable {
 
     public static StarRocksSourceTableConfig parseStarRocksSourceConfig(ReadonlyConfig config) {
 
+        String table = config.get(CommonConfig.TABLE);
+        String dataBase = config.get(CommonConfig.DATABASE);
+        TablePath tablePath = TablePath.of(dataBase, table);
+        TableSchema tableSchema = new ReadonlyConfigParser().parse(config);
+        CatalogTable catalogTable =
+                CatalogTable.of(
+                        TableIdentifier.of("", tablePath),
+                        tableSchema,
+                        new HashMap<>(),
+                        new ArrayList<>(),
+                        config.get(TableSchemaOptions.TableIdentifierOptions.COMMENT));
+
         return new StarRocksSourceTableConfig(
-                config.get(CommonConfig.TABLE),
-                CatalogTableUtil.buildWithConfig(config),
-                config.get(SourceConfig.SCAN_FILTER));
+                table, catalogTable, config.get(SourceConfig.SCAN_FILTER));
     }
 
     public static List<StarRocksSourceTableConfig> of(ReadonlyConfig config) {

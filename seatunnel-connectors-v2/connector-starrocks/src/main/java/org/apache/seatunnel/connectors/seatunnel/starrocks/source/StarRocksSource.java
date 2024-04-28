@@ -27,12 +27,9 @@ import org.apache.seatunnel.connectors.seatunnel.starrocks.config.CommonConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SourceConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksSourceTableConfig;
 
-import com.google.auto.service.AutoService;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
-@AutoService(SeaTunnelSource.class)
 public class StarRocksSource
         implements SeaTunnelSource<SeaTunnelRow, StarRocksSourceSplit, StarRocksSourceState> {
 

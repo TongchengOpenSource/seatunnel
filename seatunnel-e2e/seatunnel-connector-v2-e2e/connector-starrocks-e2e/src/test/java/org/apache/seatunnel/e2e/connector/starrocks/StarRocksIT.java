@@ -329,6 +329,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
             statement.execute("create database test");
             // create source table
             statement.execute(DDL_SOURCE);
+            statement.execute(DDL_SOURCE_3);
             //            statement.execute(DDL_SOURCE_3);
             // create sink table
             // statement.execute(DDL_SINK);
@@ -371,6 +372,14 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
     private void clearSinkTable() {
         try (Statement statement = jdbcConnection.createStatement()) {
             statement.execute(String.format("TRUNCATE TABLE %s.%s", DATABASE, SINK_TABLE));
+        } catch (SQLException e) {
+            throw new RuntimeException("test starrocks server image error", e);
+        }
+    }
+
+    private void deleteTable(String tableName) {
+        try (Statement statement = jdbcConnection.createStatement()) {
+            statement.execute(String.format("TRUNCATE TABLE %s.%s", DATABASE, tableName));
         } catch (SQLException e) {
             throw new RuntimeException("test starrocks server image error", e);
         }
@@ -443,9 +452,11 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
     @TestTemplate
     public void testStarRocksMultipleRead(TestContainer container)
             throws IOException, InterruptedException {
-        //        batchInsertData(INIT_DATA_SQL_3);
+        batchInsertData(INIT_DATA_SQL_3);
+        assertHasData(SOURCE_TABLE_3);
         Container.ExecResult execResult =
                 container.executeJob("/starrocks_to_assert_with_multipletable.conf");
         Assertions.assertEquals(0, execResult.getExitCode());
+        deleteTable(SOURCE_TABLE_3);
     }
 }
