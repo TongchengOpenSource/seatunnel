@@ -155,52 +155,6 @@ source {
     username = root
     password = ""
     database = "test"
-    table_list = [
-        {
-            table = "e2e_table_source"
-            schema = {
-                fields {
-                   BIGINT_COL = BIGINT
-                   LARGEINT_COL = STRING
-                   SMALLINT_COL = SMALLINT
-                   TINYINT_COL = TINYINT
-                   BOOLEAN_COL = BOOLEAN
-                   DECIMAL_COL = "DECIMAL(20, 1)"
-                   DOUBLE_COL = DOUBLE
-                   FLOAT_COL = FLOAT
-                   INT_COL = INT
-                   CHAR_COL = STRING
-                   VARCHAR_11_COL = STRING
-                   STRING_COL = STRING
-                   DATETIME_COL = TIMESTAMP
-                   DATE_COL = DATE
-                }
-            },
-            scan_filter = ""
-        },
-        {
-            table = "e2e_table_source_2"
-            schema = {
-                fields {
-                   BIGINT_COL_2 = BIGINT
-                   LARGEINT_COL_2 = STRING
-                   SMALLINT_COL_2 = SMALLINT
-                   TINYINT_COL_2 = TINYINT
-                   BOOLEAN_COL_2 = BOOLEAN
-                   DECIMAL_COL_2 = "DECIMAL(20, 1)"
-                   DOUBLE_COL_2 = DOUBLE
-                   FLOAT_COL_2 = FLOAT
-                   INT_COL_2 = INT
-                   CHAR_COL_2 = STRING
-                   VARCHAR_11_COL_2 = STRING
-                   STRING_COL_2 = STRING
-                   DATETIME_COL_2 = TIMESTAMP
-                   DATE_COL_2 = DATE
-                }
-            },
-            scan_filter = ""
-        }
-    ]
     table = "e2e_table_source"
     scan_batch_rows = 10
     max_retries = 3
