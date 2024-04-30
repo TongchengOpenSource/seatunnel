@@ -26,7 +26,7 @@ delivers the query plan as a parameter to BE nodes, and then obtains data result
 | password                | string | yes      | -                 |
 | database                | string | yes      | -                 |
 | table                   | string | yes      | -                 |
-| table_list              | Array  | No       | -                 |
+| table_list              | Array  | no       | -                 |
 | scan_filter             | string | no       | -                 |
 | schema                  | config | yes      | -                 |
 | request_tablet_size     | int    | no       | Integer.MAX_VALUE |
@@ -60,7 +60,7 @@ The name of StarRocks table
 
 ### table_list [Array]
 
-The list of tables to be read, you can use this configuration instead of `table` example: ```[{ table = "testdb.table1"}, {table = "testdb.table2", query = "select * id, name from testdb.table2"}]```
+The list of tables to be read, you can use this configuration instead of `table` example: ```[{ table = "e2e_table_source"}, {table = "e2e_table_source_3"}]```
 
 ### scan_filter [string]
 
