@@ -26,7 +26,6 @@ delivers the query plan as a parameter to BE nodes, and then obtains data result
 | password                | string | yes      | -                 |
 | database                | string | yes      | -                 |
 | table                   | string | yes      | -                 |
-| table_list              | Array  | no       | -                 |
 | scan_filter             | string | no       | -                 |
 | schema                  | config | yes      | -                 |
 | request_tablet_size     | int    | no       | Integer.MAX_VALUE |
@@ -57,10 +56,6 @@ The name of StarRocks database
 ### table [string]
 
 The name of StarRocks table
-
-### table_list [Array]
-
-The list of tables to be read, you can use this configuration instead of `table` example: ```[{ table = "e2e_table_source"}, {table = "e2e_table_source_3"}]```
 
 ### scan_filter [string]
 
@@ -148,7 +143,7 @@ The parameter of the scan data from be
 
 ## Example
 
-```hocon
+```
 source {
   StarRocks {
     nodeUrls = ["starrocks_e2e:8030"]
@@ -158,6 +153,22 @@ source {
     table = "e2e_table_source"
     scan_batch_rows = 10
     max_retries = 3
+    fields {
+       BIGINT_COL = BIGINT
+       LARGEINT_COL = STRING
+       SMALLINT_COL = SMALLINT
+       TINYINT_COL = TINYINT
+       BOOLEAN_COL = BOOLEAN
+       DECIMAL_COL = "DECIMAL(20, 1)"
+       DOUBLE_COL = DOUBLE
+       FLOAT_COL = FLOAT
+       INT_COL = INT
+       CHAR_COL = STRING
+       VARCHAR_11_COL = STRING
+       STRING_COL = STRING
+       DATETIME_COL = TIMESTAMP
+       DATE_COL = DATE
+    }
     scan.params.scanner_thread_pool_thread_num = "3"
     
   }
@@ -169,4 +180,3 @@ source {
 ### next version
 
 - Add StarRocks Source Connector
-
