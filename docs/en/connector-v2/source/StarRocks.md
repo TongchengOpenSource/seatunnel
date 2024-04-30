@@ -148,7 +148,7 @@ The parameter of the scan data from be
 
 ## Example
 
-```
+```hocon
 source {
   StarRocks {
     nodeUrls = ["starrocks_e2e:8030"]
