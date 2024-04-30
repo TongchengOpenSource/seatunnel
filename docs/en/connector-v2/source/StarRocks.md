@@ -26,7 +26,6 @@ delivers the query plan as a parameter to BE nodes, and then obtains data result
 | password                | string | yes      | -                 |
 | database                | string | yes      | -                 |
 | table                   | string | yes      | -                 |
-| table_list              | array  | no       | -                 |
 | scan_filter             | string | no       | -                 |
 | schema                  | config | yes      | -                 |
 | request_tablet_size     | int    | no       | Integer.MAX_VALUE |
