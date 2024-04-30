@@ -200,6 +200,7 @@ source {
             },
             scan_filter = ""
         }
+    ]
     table = "e2e_table_source"
     scan_batch_rows = 10
     max_retries = 3
