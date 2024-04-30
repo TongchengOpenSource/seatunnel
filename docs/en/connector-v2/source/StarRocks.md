@@ -25,7 +25,7 @@ delivers the query plan as a parameter to BE nodes, and then obtains data result
 | username                | string | yes      | -                 |
 | password                | string | yes      | -                 |
 | database                | string | yes      | -                 |
-| table                   | string | no       | -                 |
+| table                   | string | yes      | -                 |
 | table_list              | array  | no       | -                 |
 | scan_filter             | string | no       | -                 |
 | schema                  | config | yes      | -                 |
@@ -58,17 +58,13 @@ The name of StarRocks database
 
 The name of StarRocks table
 
-### table_list [array]
-
-The name of StarRocks table list
-
 ### scan_filter [string]
 
 Filter expression of the query, which is transparently transmitted to StarRocks. StarRocks uses this expression to complete source-side data filtering.
 
 e.g.
 
-```hocon
+```
 "tinyint_1 = 100"
 ```
 
@@ -80,7 +76,7 @@ The schema of the starRocks that you want to generate
 
 e.g.
 
-```hocon
+```
 schema {
     fields {
         name = string
@@ -148,7 +144,7 @@ The parameter of the scan data from be
 
 ## Example
 
-```hocon
+```
 source {
   StarRocks {
     nodeUrls = ["starrocks_e2e:8030"]
