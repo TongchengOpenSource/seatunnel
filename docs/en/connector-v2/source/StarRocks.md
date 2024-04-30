@@ -58,6 +58,10 @@ The name of StarRocks database
 
 The name of StarRocks table
 
+### table_list [array]
+
+The name of StarRocks table list
+
 ### scan_filter [string]
 
 Filter expression of the query, which is transparently transmitted to StarRocks. StarRocks uses this expression to complete source-side data filtering.
