@@ -112,8 +112,6 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
         // open scanner to be
         SeaTunnelRowType seaTunnelRowType = tables.get(partition.getTable());
         client.openScanner(partition, seaTunnelRowType);
-        System.out.println(
-                "partition: " + partition.toString() + "client.hasNext(): " + client.hasNext());
         while (client.hasNext()) {
             SeaTunnelRow seaTunnelRow = client.getNext();
             seaTunnelRow.setTableId(partition.getTable());

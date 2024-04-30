@@ -104,14 +104,8 @@ public class SeaTunnelSourceCollector<T> implements Collector<T> {
                 if (rowType instanceof SeaTunnelRowType) {
                     size = ((SeaTunnelRow) row).getBytesSize((SeaTunnelRowType) rowType);
                 } else if (rowType instanceof MultipleRowType) {
-                    rowTypeMap.forEach(
-                            (k, v) -> {
-                                System.out.println("rowType_key: " + k + " value: " + v);
-                            });
                     SeaTunnelRowType seaTunnelRowType =
                             rowTypeMap.get(((SeaTunnelRow) row).getTableId());
-                    System.out.println("seaTunnelRowType: " + seaTunnelRowType);
-                    System.out.println("tableid: " + ((SeaTunnelRow) row).getTableId());
                     size = ((SeaTunnelRow) row).getBytesSize(seaTunnelRowType);
                 } else {
                     throw new SeaTunnelEngineException(

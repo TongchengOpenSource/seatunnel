@@ -92,6 +92,8 @@ public class StarRocksBeReadClient implements Serializable {
 
     public void openScanner(QueryPartition partition, SeaTunnelRowType seaTunnelRowType) {
         eos.set(false);
+        this.readerOffset = 0;
+        this.rowBatch = null;
         this.seaTunnelRowType = seaTunnelRowType;
         Set<Long> tabletIds = partition.getTabletIds();
         TScanOpenParams params = new TScanOpenParams();
@@ -140,7 +142,6 @@ public class StarRocksBeReadClient implements Serializable {
     public boolean hasNext() {
         boolean hasNext = false;
         // Arrow data was acquired synchronously during the iterative process
-        System.out.println("eos.get(): " + eos.get());
         if (!eos.get() && (rowBatch == null || !rowBatch.hasNext())) {
             if (rowBatch != null) {
                 readerOffset += rowBatch.getReadRowCount();
