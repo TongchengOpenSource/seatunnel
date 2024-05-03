@@ -22,7 +22,7 @@ After enabling the optimization job submission process configuration item, you d
 - COMMON_PLUGIN_JARS
 - CONNECTOR_PLUGIN_JARS
 
-COMMON_ PLUGIN_ JARS refers to the third-party Jar package that the connector relies on, CONNECTOR_PLUGIN_ JARS refers to the connector Jar package.
+COMMON_ PLUGIN_ JARS refers to the third-party Jar package that the connector relies on, CONNECTOR_PLUGIN_JARS refers to the connector Jar package.
 When common jars do not exist in Zeta's `lib`, it can upload the local common jars of the client to the `lib` directory of all engine nodes.
 This way, even if the user does not place a jar on all nodes in Zeta's `lib`, the task can still be executed normally.
 However, we do not recommend relying on the configuration item of opening the optimization job submission process to upload the third-party Jar package that the connector relies on.
@@ -36,13 +36,13 @@ Two different storage strategies provide a more flexible storage mode for Jar fi
 
 ## Related configuration
 
-|              parameter              | default value |                                                                      describe                                                                      |
+| parameter                           | default value |                                                                      describe                                                                      |
 |-------------------------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | connector-jar-storage-enable        | false         | Whether to enable uploading the connector Jar package to the engine. The default enabled state is false.                                           |
 | connector-jar-storage-mode          | SHARED        | Engine-side Jar package storage mode selection. There are two optional modes, SHARED and ISOLATED. The default Jar package storage mode is SHARED. |
 | connector-jar-storage-path          | " "           | User-defined Jar package storage path.                                                                                                             |
 | connector-jar-cleanup-task-interval | 3600s         | Engine-side Jar package cleaning scheduled task execution interval.                                                                                |
-| connector-jar-expiry-time           | 600s          | Engine-side Jar package storage expiration time.                                                                                                   |
+| connector-jar-expire-time           | 600s          | Engine-side Jar package storage expiration time.                                                                                                   |
 
 ## IsolatedConnectorJarStorageStrategy
 
@@ -58,7 +58,7 @@ jar-storage:
    connector-jar-storage-mode: ISOLATED
    connector-jar-storage-path: ""
    connector-jar-cleanup-task-interval: 3600
-   connector-jar-expiry-time: 600
+   connector-jar-expire-time: 600
 ```
 
 Detailed explanation of configuration parameters:
@@ -83,7 +83,7 @@ jar-storage:
    connector-jar-storage-mode: SHARED
    connector-jar-storage-path: ""
    connector-jar-cleanup-task-interval: 3600
-   connector-jar-expiry-time: 600
+   connector-jar-expire-time: 600
 ```
 
 Detailed explanation of configuration parameters:
