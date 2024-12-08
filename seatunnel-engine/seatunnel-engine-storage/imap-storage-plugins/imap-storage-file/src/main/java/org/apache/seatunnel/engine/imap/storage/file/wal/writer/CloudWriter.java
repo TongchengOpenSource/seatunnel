@@ -73,7 +73,6 @@ public abstract class CloudWriter implements IFileWriter<IMapFileData> {
         }
     }
 
-    // TODO Synchronous write, asynchronous write can be added in the future
     @Override
     public void write(IMapFileData data) throws IOException {
         byte[] bytes = serializer.serialize(data);

@@ -59,8 +59,10 @@ public class WALReaderAndWriterTest {
     }
 
     @Test
-    public void testWriterAndReader() throws Exception {
-        WALWriter writer = new WALWriter(FS, FileConfiguration.HDFS, PARENT_PATH, SERIALIZER);
+    public void testSyncWriterAndReader() throws Exception {
+        WALWriter writer =
+                new WALWriter(
+                        FS, FileConfiguration.HDFS, WALSyncType.SYNC, PARENT_PATH, SERIALIZER);
         IMapFileData data;
         boolean isDelete;
         for (int i = 0; i < 1024; i++) {
@@ -112,6 +114,61 @@ public class WALReaderAndWriterTest {
         Assertions.assertEquals("Kristen", result.get("key511"));
         Assertions.assertEquals(511, result.size());
         Assertions.assertNull(result.get("key519"));
+    }
+
+    @Test
+    public void testAsyncWriterAndReader() throws Exception {
+        WALWriter writer =
+                new WALWriter(
+                        FS, FileConfiguration.HDFS, WALSyncType.ASYNC, PARENT_PATH, SERIALIZER);
+        IMapFileData data;
+        boolean isDelete;
+        for (int i = 0; i < 1024; i++) {
+            data =
+                    IMapFileData.builder()
+                            .key(SERIALIZER.serialize("key" + i))
+                            .keyClassName(String.class.getName())
+                            .value(SERIALIZER.serialize("value" + i))
+                            .valueClassName(Integer.class.getName())
+                            .timestamp(System.nanoTime())
+                            .build();
+            if (i % 2 == 0) {
+                isDelete = true;
+                data.setKey(SERIALIZER.serialize(i));
+                data.setKeyClassName(Integer.class.getName());
+            } else {
+                isDelete = false;
+            }
+            data.setDeleted(isDelete);
+
+            writer.write(data);
+        }
+        // update key 511
+        data =
+                IMapFileData.builder()
+                        .key(SERIALIZER.serialize("key" + 511))
+                        .keyClassName(String.class.getName())
+                        .value(SERIALIZER.serialize("Kristen"))
+                        .valueClassName(String.class.getName())
+                        .deleted(false)
+                        .timestamp(System.nanoTime())
+                        .build();
+        writer.write(data);
+        // delete key 519
+        data =
+                IMapFileData.builder()
+                        .key(SERIALIZER.serialize("key" + 519))
+                        .keyClassName(String.class.getName())
+                        .deleted(true)
+                        .timestamp(System.nanoTime())
+                        .build();
+
+        writer.write(data);
+        writer.close();
+        await().atMost(10, java.util.concurrent.TimeUnit.SECONDS).await();
+
+        WALReader reader = new WALReader(FS, FileConfiguration.HDFS, new ProtoStuffSerializer());
+        Map<Object, Object> result = reader.loadAllData(PARENT_PATH, new HashSet<>());
     }
 
     @AfterAll

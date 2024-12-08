@@ -25,6 +25,7 @@ import org.apache.seatunnel.engine.imap.storage.api.exception.IMapStorageExcepti
 import org.apache.seatunnel.engine.imap.storage.file.bean.IMapFileData;
 import org.apache.seatunnel.engine.imap.storage.file.common.FileConstants;
 import org.apache.seatunnel.engine.imap.storage.file.common.WALReader;
+import org.apache.seatunnel.engine.imap.storage.file.common.WALSyncType;
 import org.apache.seatunnel.engine.imap.storage.file.config.AbstractConfiguration;
 import org.apache.seatunnel.engine.imap.storage.file.config.FileConfiguration;
 import org.apache.seatunnel.engine.imap.storage.file.disruptor.WALDisruptor;
@@ -72,6 +73,8 @@ public class IMapFileStorage implements IMapStorage {
 
     private static final String STORAGE_TYPE_KEY = "storage.type";
 
+    private static final String WAL_SYNC_TYPE_KEY = "wal.sync.type";
+
     public FileSystem fs;
 
     public String namespace;
@@ -108,6 +111,7 @@ public class IMapFileStorage implements IMapStorage {
     public static final long DEFAULT_WRITE_DATA_TIMEOUT_MILLISECONDS = 1000 * 60;
 
     private Configuration conf;
+    private WALSyncType walSyncType;
 
     private FileConfiguration fileConfiguration;
 
@@ -121,9 +125,16 @@ public class IMapFileStorage implements IMapStorage {
 
         String storageType =
                 String.valueOf(
-                        configuration.getOrDefault(
-                                STORAGE_TYPE_KEY, FileConfiguration.HDFS.toString()));
-        this.fileConfiguration = FileConfiguration.valueOf(storageType.toUpperCase());
+                                configuration.getOrDefault(
+                                        STORAGE_TYPE_KEY, FileConfiguration.HDFS.toString()))
+                        .toUpperCase();
+        String walSyncMethod =
+                String.valueOf(
+                                configuration.getOrDefault(
+                                        WAL_SYNC_TYPE_KEY, WALSyncType.SYNC.toString()))
+                        .toUpperCase();
+        this.walSyncType = WALSyncType.valueOf(walSyncMethod);
+        this.fileConfiguration = FileConfiguration.valueOf(storageType);
         // build configuration
         AbstractConfiguration fileConfiguration = this.fileConfiguration.getConfiguration();
         Map<String, String> stringMap =
@@ -162,7 +173,8 @@ public class IMapFileStorage implements IMapStorage {
         this.walDisruptor =
                 new WALDisruptor(
                         fs,
-                        FileConfiguration.valueOf(storageType.toUpperCase()),
+                        FileConfiguration.valueOf(storageType),
+                        WALSyncType.valueOf(walSyncMethod),
                         businessRootPath + region + DEFAULT_IMAP_FILE_PATH_SPLIT,
                         serializer);
     }
@@ -312,6 +324,9 @@ public class IMapFileStorage implements IMapStorage {
     }
 
     private boolean queryExecuteStatus(long requestId) {
+        if (WALSyncType.ASYNC == walSyncType) {
+            return true;
+        }
         return queryExecuteStatus(requestId, this.writDataTimeoutMilliseconds);
     }
 
@@ -333,17 +348,8 @@ public class IMapFileStorage implements IMapStorage {
     private Set<Object> batchQueryExecuteFailsStatus(
             Map<Long, Object> requestMap, Set<Object> failures) {
         for (Map.Entry<Long, Object> entry : requestMap.entrySet()) {
-            boolean success = false;
-            RequestFuture requestFuture = RequestFutureCache.get(entry.getKey());
-            try {
-                if (requestFuture.isDone() || Boolean.TRUE.equals(requestFuture.get())) {
-                    success = true;
-                }
-            } catch (Exception e) {
-                log.error("wait for write status error", e);
-            } finally {
-                RequestFutureCache.remove(entry.getKey());
-            }
+            Long requestId = entry.getKey();
+            boolean success = queryExecuteStatus(requestId);
             if (!success) {
                 failures.add(entry.getValue());
             }
