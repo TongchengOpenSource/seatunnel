@@ -22,7 +22,7 @@ import org.apache.seatunnel.api.sink.SupportMultiTableSinkWriter;
 import org.apache.seatunnel.api.table.type.SeaTunnelDataType;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
-import org.apache.seatunnel.common.exception.CommonErrorCodeDeprecated;
+import org.apache.seatunnel.common.exception.CommonErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.hbase.client.HbaseClient;
 import org.apache.seatunnel.connectors.seatunnel.hbase.config.HbaseParameters;
 import org.apache.seatunnel.connectors.seatunnel.hbase.exception.HbaseConnectorException;
@@ -36,8 +36,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -60,6 +60,10 @@ public class HbaseSinkWriter
 
     private String defaultFamilyName = "value";
 
+    private List<Put> putList;
+
+    public static final int BATCH_NUM = 10000;
+
     public HbaseSinkWriter(
             SeaTunnelRowType seaTunnelRowType,
             HbaseParameters hbaseParameters,
@@ -76,12 +80,22 @@ public class HbaseSinkWriter
         }
 
         this.hbaseClient = HbaseClient.createInstance(hbaseParameters);
+        putList = new ArrayList<>();
     }
 
     @Override
     public void write(SeaTunnelRow element) throws IOException {
         Put put = convertRowToPut(element);
-        hbaseClient.mutate(put);
+        if (!put.isEmpty()) {
+            putList.add(put);
+        }
+        if (putList.size() >= BATCH_NUM) {
+            try {
+                hbaseClient.batchMutate(putList);
+            } finally {
+                putList.clear();
+            }
+        }
     }
 
     @Override
@@ -94,8 +108,12 @@ public class HbaseSinkWriter
 
     @Override
     public void close() throws IOException {
-        if (hbaseClient != null) {
-            hbaseClient.close();
+        if (!putList.isEmpty()) {
+            try {
+                hbaseClient.batchMutate(putList);
+            } finally {
+                putList.clear();
+            }
         }
     }
 
@@ -120,7 +138,6 @@ public class HbaseSinkWriter
                         .collect(Collectors.toList());
         for (Integer writeColumnIndex : writeColumnIndexes) {
             String fieldName = seaTunnelRowType.getFieldName(writeColumnIndex);
-            Map<String, String> configurationFamilyNames = hbaseParameters.getFamilyNames();
             String familyName =
                     hbaseParameters.getFamilyNames().getOrDefault(fieldName, defaultFamilyName);
             byte[] bytes = convertColumnToBytes(row, writeColumnIndex);
@@ -184,8 +201,7 @@ public class HbaseSinkWriter
                         String.format(
                                 "Hbase connector does not support this column type [%s]",
                                 fieldType.getSqlType());
-                throw new HbaseConnectorException(
-                        CommonErrorCodeDeprecated.UNSUPPORTED_DATA_TYPE, errorMsg);
+                throw new HbaseConnectorException(CommonErrorCode.UNSUPPORTED_DATA_TYPE, errorMsg);
         }
     }
 }

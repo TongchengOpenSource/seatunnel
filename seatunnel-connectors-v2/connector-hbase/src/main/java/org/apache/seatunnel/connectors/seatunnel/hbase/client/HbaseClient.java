@@ -355,6 +355,16 @@ public class HbaseClient {
     }
 
     /**
+     * Mutate Put List.
+     *
+     * @param putList Hbase put list
+     * @throws IOException exception
+     */
+    public void batchMutate(List<Put> putList) throws IOException {
+        hbaseMutator.mutate(putList);
+    }
+
+    /**
      * Scan a table.
      *
      * @param split Hbase source split

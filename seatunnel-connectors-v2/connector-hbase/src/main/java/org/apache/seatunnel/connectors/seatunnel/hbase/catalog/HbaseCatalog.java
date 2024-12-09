@@ -69,7 +69,14 @@ public class HbaseCatalog implements Catalog {
 
     @Override
     public void close() throws CatalogException {
-        hbaseClient.close();
+        if (this.hbaseClient != null) {
+            try {
+                this.hbaseClient.close();
+            } catch (Exception e) {
+                throw new CatalogException("Failed to close HBase connection.", e);
+            }
+            log.info("Current HBase connection is closed.");
+        }
     }
 
     @Override
