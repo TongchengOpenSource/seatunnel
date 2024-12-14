@@ -39,6 +39,8 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -60,6 +62,12 @@ public class HbaseSinkWriter
 
     private String defaultFamilyName = "value";
 
+    private static final int POOL_SIZE = 10;
+
+    private static final int TASK_COUNT = 100;
+
+    final ExecutorService workerPool;
+
     public HbaseSinkWriter(
             SeaTunnelRowType seaTunnelRowType,
             HbaseParameters hbaseParameters,
@@ -76,12 +84,16 @@ public class HbaseSinkWriter
         }
 
         this.hbaseClient = HbaseClient.createInstance(hbaseParameters);
+        this.workerPool = Executors.newFixedThreadPool(POOL_SIZE);
     }
 
     @Override
     public void write(SeaTunnelRow element) throws IOException {
-        Put put = convertRowToPut(element);
-        hbaseClient.mutate(put);
+        workerPool.submit(
+                () -> {
+                    hbaseClient.mutate(convertRowToPut(element));
+                    return null;
+                });
     }
 
     @Override
@@ -96,6 +108,9 @@ public class HbaseSinkWriter
     public void close() throws IOException {
         if (hbaseClient != null) {
             hbaseClient.close();
+        }
+        if (workerPool != null) {
+            workerPool.shutdown();
         }
     }
 

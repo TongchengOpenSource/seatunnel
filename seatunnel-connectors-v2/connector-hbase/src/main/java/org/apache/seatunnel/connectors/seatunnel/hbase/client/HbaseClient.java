@@ -77,7 +77,13 @@ public class HbaseClient {
                                             hbaseParameters.getNamespace(),
                                             hbaseParameters.getTable()))
                             .pool(HTable.getDefaultExecutor(hbaseConfiguration))
-                            .writeBufferSize(hbaseParameters.getWriteBufferSize());
+                            .writeBufferSize(hbaseParameters.getWriteBufferSize())
+                            .listener(
+                                    (e, mutator) -> {
+                                        for (int i = 0; i < e.getNumExceptions(); i++) {
+                                            log.error("Failed to sent put {}.", e.getRow(i));
+                                        }
+                                    });
             hbaseMutator = connection.getBufferedMutator(bufferedMutatorParams);
         } catch (IOException e) {
             throw new HbaseConnectorException(
@@ -108,8 +114,7 @@ public class HbaseClient {
             hbaseParameters.getHbaseExtraConfig().forEach(hbaseConfiguration::set);
         }
         try {
-            Connection connection = ConnectionFactory.createConnection(hbaseConfiguration);
-            return connection;
+            return ConnectionFactory.createConnection(hbaseConfiguration);
         } catch (IOException e) {
             String errorMsg = "Build Hbase connection failed.";
             throw new HbaseConnectorException(
