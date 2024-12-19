@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -140,6 +141,7 @@ public class StarRocksQueryPlanReadClient {
         bodyMap.put("sql", querySQL);
         String body = JsonUtils.toJsonString(bodyMap);
         String respString = "";
+        Collections.shuffle(nodeUrls);
         for (String feNode : nodeUrls) {
             String url =
                     new StringBuilder("http://")
