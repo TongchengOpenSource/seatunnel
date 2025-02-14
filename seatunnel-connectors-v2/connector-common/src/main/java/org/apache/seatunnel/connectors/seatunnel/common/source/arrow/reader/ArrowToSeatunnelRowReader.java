@@ -185,9 +185,7 @@ public class ArrowToSeatunnelRowReader implements AutoCloseable {
                 } else if (fieldValue instanceof Text) {
                     return LocalDate.parse(((Text) fieldValue).toString(), DATE_FORMATTER);
                 } else if (fieldValue instanceof LocalDateTime) {
-                    ZonedDateTime utcTime = ((LocalDateTime) fieldValue).atZone(ZoneId.of("UTC"));
-                    ZonedDateTime systemDateTime = utcTime.withZoneSameInstant(ZoneId.systemDefault());
-                    return systemDateTime.toLocalDate();
+                    return ((LocalDateTime) fieldValue).toLocalDate();
                 } else {
                     return fieldValue;
                 }
