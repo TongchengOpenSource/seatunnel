@@ -43,6 +43,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -135,7 +137,7 @@ public class ArrowToSeatunnelRowReader implements AutoCloseable {
             Integer fieldIndex = fieldIndexMap.get(name);
             Types.MinorType minorType = fieldVector.getMinorType();
             for (int i = 0; i < seatunnelRowBatch.size(); i++) {
-                // arrow field not in the Seatunnel Sechma field, skip it
+                // arrow field not in the Seatunnel Schema field, skip it
                 if (fieldIndex != null) {
                     SeaTunnelDataType<?> seaTunnelDataType = seaTunnelDataTypes[fieldIndex];
                     Object fieldValue =
@@ -183,7 +185,9 @@ public class ArrowToSeatunnelRowReader implements AutoCloseable {
                 } else if (fieldValue instanceof Text) {
                     return LocalDate.parse(((Text) fieldValue).toString(), DATE_FORMATTER);
                 } else if (fieldValue instanceof LocalDateTime) {
-                    return ((LocalDateTime) fieldValue).toLocalDate();
+                    ZonedDateTime utcTime = ((LocalDateTime) fieldValue).atZone(ZoneId.of("UTC"));
+                    ZonedDateTime systemDateTime = utcTime.withZoneSameInstant(ZoneId.systemDefault());
+                    return systemDateTime.toLocalDate();
                 } else {
                     return fieldValue;
                 }

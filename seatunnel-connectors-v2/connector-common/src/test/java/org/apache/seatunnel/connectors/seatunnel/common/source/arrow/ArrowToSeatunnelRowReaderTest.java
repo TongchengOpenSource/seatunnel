@@ -172,7 +172,7 @@ public class ArrowToSeatunnelRowReaderTest {
         }
         // allocate storage
         vectors.forEach(FieldVector::allocateNew);
-        // setVectorVaule
+        // setVectorValue
         long epochMilli =
                 localDateTime
                         .truncatedTo(ChronoUnit.MILLIS)
