@@ -78,7 +78,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
     private static final String DATABASE = "test";
     private static final String URL = "jdbc:mysql://%s:" + SR_PORT;
     private static final String SOURCE_TABLE = "e2e_table_source";
-    private static final String SOURCE_TABLE_2 = "e2e_table_source_2";
+    private static final String SOURCE_TABLE_3 = "e2e_table_source_3";
     private static final String SINK_TABLE = "e2e_table_sink";
     private static final String SR_DRIVER_JAR =
             "https://repo1.maven.org/maven2/mysql/mysql-connector-java/8.0.16/mysql-connector-java-8.0.16.jar";
@@ -197,7 +197,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
             "insert into "
                     + DATABASE
                     + "."
-                    + SOURCE_TABLE_2
+                    + SOURCE_TABLE_3
                     + " (\n"
                     + "  BIGINT_COL,\n"
                     + "  LARGEINT_COL,\n"
