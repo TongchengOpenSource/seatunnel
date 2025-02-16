@@ -252,6 +252,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
                 .untilAsserted(this::initializeJdbcConnection);
         initializeJdbcTable();
         batchInsertData(INIT_DATA_SQL);
+        batchInsertData(INIT_DATA_SQL_2);
     }
 
     private static List<SeaTunnelRow> generateTestDataSet() {
@@ -386,7 +387,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
             }
             jdbcConnection.commit();
         } catch (Exception exception) {
-            log.error(ExceptionUtils.getMessage(exception));
+            log.error("get connection error: " + ExceptionUtils.getMessage(exception));
             throw new RuntimeException("get connection error", exception);
         }
     }
@@ -483,7 +484,6 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
     @TestTemplate
     public void testStarRocksMultipleRead(TestContainer container)
             throws IOException, InterruptedException {
-        batchInsertData(INIT_DATA_SQL_2);
         Container.ExecResult execResult =
                 container.executeJob("/starrocks-to-assert-with-multipletable.conf");
         Assertions.assertEquals(0, execResult.getExitCode());
