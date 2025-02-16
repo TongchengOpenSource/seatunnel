@@ -119,7 +119,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
             "create table "
                     + DATABASE
                     + "."
-                    + SOURCE_TABLE_2
+                    + SOURCE_TABLE_3
                     + " (\n"
                     + "  BIGINT_COL     BIGINT,\n"
                     + "  LARGEINT_COL   LARGEINT,\n"
