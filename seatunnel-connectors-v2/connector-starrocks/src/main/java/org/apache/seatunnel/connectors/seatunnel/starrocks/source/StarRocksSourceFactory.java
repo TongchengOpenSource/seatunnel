@@ -50,10 +50,9 @@ public class StarRocksSourceFactory implements TableSourceFactory {
                         StarRocksSourceOptions.NODE_URLS,
                         StarRocksSourceOptions.USERNAME,
                         StarRocksSourceOptions.PASSWORD,
-                        StarRocksSourceOptions.DATABASE,
-                        StarRocksSourceOptions.TABLE,
-                        SinkConnectorCommonOptions.SCHEMA)
+                        StarRocksSourceOptions.DATABASE)
                 .optional(
+                        SinkConnectorCommonOptions.SCHEMA,
                         StarRocksSourceOptions.MAX_RETRIES,
                         StarRocksSourceOptions.QUERY_TABLET_SIZE,
                         StarRocksSourceOptions.SCAN_FILTER,
@@ -62,6 +61,7 @@ public class StarRocksSourceFactory implements TableSourceFactory {
                         StarRocksSourceOptions.SCAN_KEEP_ALIVE_MIN,
                         StarRocksSourceOptions.SCAN_BATCH_ROWS,
                         StarRocksSourceOptions.SCAN_CONNECT_TIMEOUT)
+                .exclusive(StarRocksSourceOptions.TABLE, StarRocksSourceOptions.TABLE_LIST)
                 .build();
     }
 
@@ -75,9 +75,7 @@ public class StarRocksSourceFactory implements TableSourceFactory {
             TableSource<T, SplitT, StateT> createSource(TableSourceFactoryContext context) {
         ReadonlyConfig config = context.getOptions();
         SourceConfig starRocksSourceConfig = new SourceConfig(config);
-        CatalogTable catalogTable = CatalogTableUtil.buildWithConfig(config);
         return () ->
-                (SeaTunnelSource<T, SplitT, StateT>)
-                        new StarRocksSource(starRocksSourceConfig, catalogTable);
+                (SeaTunnelSource<T, SplitT, StateT>) new StarRocksSource(starRocksSourceConfig);
     }
 }
