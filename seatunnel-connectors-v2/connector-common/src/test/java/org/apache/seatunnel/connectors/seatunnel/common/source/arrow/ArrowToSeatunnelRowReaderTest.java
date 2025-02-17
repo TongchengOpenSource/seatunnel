@@ -67,10 +67,9 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -85,18 +84,9 @@ public class ArrowToSeatunnelRowReaderTest {
     private static RootAllocator rootAllocator;
     private static final List<SeaTunnelDataTypeHolder> seaTunnelDataTypeHolder = new ArrayList<>();
 
-    // 2025-02-15 04:21:23
-    private static long testEpochMilli = 1739564483396L;
-    /**
-     * LocalDateTime.now() is timestamped with a precision of nanoseconds on linux and milliseconds
-     * on windows The test case uses TimeStampMicroVector to test the timestamp, thus truncating the
-     * timestamp accuracy to ChronoUnit.MILLIS
-     */
     private static final LocalDateTime localDateTime =
-            LocalDateTime.ofInstant(
-                    Instant.ofEpochSecond(testEpochMilli), // 转为 Instant
-                    ZoneId.systemDefault()                  // 使用系统默认时区
-            );
+            LocalDateTime.parse(
+                    "2025-02-15 02:21:23", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
     private static final List<String> stringData = new ArrayList<>();
     private static final List<Byte> byteData = new ArrayList<>();
@@ -178,6 +168,7 @@ public class ArrowToSeatunnelRowReaderTest {
         }
         // allocate storage
         vectors.forEach(FieldVector::allocateNew);
+        long epochMilli = localDateTime.atZone(zoneId).toInstant().toEpochMilli();
 
         byte byteStart = 'a';
 
@@ -212,7 +203,7 @@ public class ArrowToSeatunnelRowReaderTest {
                             ((VarCharVector) vector)
                                     .setSafe(i, (stringValue).getBytes(StandardCharsets.UTF_8));
                         } else if (vector instanceof TimeStampMicroVector) {
-                            ((TimeStampMicroVector) vector).setSafe(i, testEpochMilli);
+                            ((TimeStampMicroVector) vector).setSafe(i, epochMilli * 1000);
                         } else if (vector instanceof VarBinaryVector) {
                             ((VarBinaryVector) vector)
                                     .setSafe(i, (stringValue).getBytes(StandardCharsets.UTF_8));
@@ -220,11 +211,11 @@ public class ArrowToSeatunnelRowReaderTest {
                             ((LargeVarCharVector) vector)
                                     .setSafe(i, (stringValue).getBytes(StandardCharsets.UTF_8));
                         } else if (vector instanceof TimeStampMilliTZVector) {
-                            ((TimeStampMilliTZVector) vector).setSafe(i, testEpochMilli);
+                            ((TimeStampMilliTZVector) vector).setSafe(i, epochMilli);
                         } else if (vector instanceof TimeMicroVector) {
-                            ((TimeMicroVector) vector).setSafe(i, testEpochMilli);
+                            ((TimeMicroVector) vector).setSafe(i, epochMilli);
                         } else if (vector instanceof DateMilliVector) {
-                            ((DateMilliVector) vector).setSafe(i, testEpochMilli);
+                            ((DateMilliVector) vector).setSafe(i, epochMilli);
                         } else if (vector instanceof DateDayVector) {
                             ((DateDayVector) vector)
                                     .setSafe(i, (int) localDateTime.toLocalDate().toEpochDay());
@@ -257,7 +248,7 @@ public class ArrowToSeatunnelRowReaderTest {
                                 if ("array2".equals(name)) {
                                     List<LocalDateTime> dateTimeList = new ArrayList<>();
                                     for (int j = 0; j < 5; j++) {
-                                        writer.writeTimeStampMilliTZ(testEpochMilli);
+                                        writer.writeTimeStampMilliTZ(epochMilli);
                                         dateTimeList.add(localDateTime);
                                     }
                                     writer.setValueCount(5);
