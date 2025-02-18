@@ -84,17 +84,22 @@ public class StartRocksSourceSplitEnumerator
         Set<Integer> readers = context.registeredReaders();
         if (shouldEnumerate) {
             while (!pendingTables.isEmpty()) {
+                synchronized (stateLock) {
+                    String table = pendingTables.poll();
+                    log.info("Splitting table {}.", table);
+                    List<StarRocksSourceSplit> newSplits = getStarRocksSourceSplit(table);
+                    log.info("Split table {} into {} splits.", table, newSplits.size());
+                    addPendingSplit(newSplits);
+                }
 
-                String table = pendingTables.poll();
-                log.info("Splitting table {}.", table);
-                List<StarRocksSourceSplit> newSplits = getStarRocksSourceSplit(table);
-                log.info("Split table {} into {} splits.", table, newSplits.size());
-                addPendingSplit(newSplits);
+                synchronized (stateLock) {
+                    assignSplit(readers);
+                }
             }
-            synchronized (stateLock) {
-                assignSplit(readers);
-                shouldEnumerate = false;
-            }
+            //            synchronized (stateLock) {
+            //                assignSplit(readers);
+            //                shouldEnumerate = false;
+            //            }
         }
 
         log.debug(

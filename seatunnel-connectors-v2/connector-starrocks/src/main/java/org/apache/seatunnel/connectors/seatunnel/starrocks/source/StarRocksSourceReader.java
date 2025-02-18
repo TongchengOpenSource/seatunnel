@@ -103,6 +103,8 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
     private void read(StarRocksSourceSplit split, Collector<SeaTunnelRow> output) {
 
         QueryPartition partition = split.getPartition();
+        String table = partition.getTable();
+        String database = partition.getDatabase();
         String beAddress = partition.getBeAddress();
         StarRocksBeReadClient client = null;
         if (clientsPools.containsKey(beAddress)) {
@@ -116,7 +118,8 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
         client.openScanner(partition, seaTunnelRowType);
         while (client.hasNext()) {
             SeaTunnelRow seaTunnelRow = client.getNext();
-            seaTunnelRow.setTableId(partition.getTable());
+            log.info("seaTunnelRow: {}", seaTunnelRow.toString());
+            seaTunnelRow.setTableId(database + "." + table);
             output.collect(seaTunnelRow);
         }
     }

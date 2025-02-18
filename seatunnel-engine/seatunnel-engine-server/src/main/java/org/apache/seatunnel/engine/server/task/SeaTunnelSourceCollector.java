@@ -101,6 +101,13 @@ public class SeaTunnelSourceCollector<T> implements Collector<T> {
                 if (rowType instanceof SeaTunnelRowType) {
                     size = ((SeaTunnelRow) row).getBytesSize((SeaTunnelRowType) rowType);
                 } else if (rowType instanceof MultipleRowType) {
+                    log.info("srId:" + tableId);
+                    log.info("srsize:" + rowTypeMap.size());
+                    log.info("srstring:" + rowTypeMap.toString());
+                    for (String s : rowTypeMap.keySet()) {
+                        log.info("srtablekey:" + s);
+                    }
+
                     size = ((SeaTunnelRow) row).getBytesSize(rowTypeMap.get(tableId));
                 } else {
                     throw new SeaTunnelEngineException(
