@@ -27,7 +27,9 @@ import org.apache.seatunnel.connectors.seatunnel.starrocks.catalog.StarRocksCata
 import org.apache.seatunnel.e2e.common.TestResource;
 import org.apache.seatunnel.e2e.common.TestSuiteBase;
 import org.apache.seatunnel.e2e.common.container.ContainerExtendedFactory;
+import org.apache.seatunnel.e2e.common.container.EngineType;
 import org.apache.seatunnel.e2e.common.container.TestContainer;
+import org.apache.seatunnel.e2e.common.junit.DisabledOnContainer;
 import org.apache.seatunnel.e2e.common.junit.TestContainerExtension;
 
 import org.junit.jupiter.api.AfterAll;
@@ -418,5 +420,17 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
         starRocksCatalog.dropTable(tablePathStarRocksSink, true);
         Assertions.assertFalse(starRocksCatalog.tableExists(tablePathStarRocksSink));
         starRocksCatalog.close();
+    }
+
+    @DisabledOnContainer(
+            value = {},
+            type = {EngineType.SPARK, EngineType.FLINK},
+            disabledReason = "")
+    @TestTemplate
+    public void testStarRocksRead(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult = container.executeJob("/starrocks-to-assert.conf");
+        log.error("execResult error: " + execResult.getStderr());
+        Assertions.assertEquals(0, execResult.getExitCode());
     }
 }
