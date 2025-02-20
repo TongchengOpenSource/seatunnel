@@ -28,7 +28,7 @@ source {
     database = "test"
     table = "e2e_table_source"
     max_retries = 3
-    request_tablet_size = 5
+    request_tablet_size = 1
     schema {
       fields {
         BIGINT_COL = BIGINT

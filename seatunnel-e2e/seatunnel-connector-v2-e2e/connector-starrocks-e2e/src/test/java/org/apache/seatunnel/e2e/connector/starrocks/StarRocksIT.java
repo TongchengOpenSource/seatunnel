@@ -27,9 +27,7 @@ import org.apache.seatunnel.connectors.seatunnel.starrocks.catalog.StarRocksCata
 import org.apache.seatunnel.e2e.common.TestResource;
 import org.apache.seatunnel.e2e.common.TestSuiteBase;
 import org.apache.seatunnel.e2e.common.container.ContainerExtendedFactory;
-import org.apache.seatunnel.e2e.common.container.EngineType;
 import org.apache.seatunnel.e2e.common.container.TestContainer;
-import org.apache.seatunnel.e2e.common.junit.DisabledOnContainer;
 import org.apache.seatunnel.e2e.common.junit.TestContainerExtension;
 
 import org.junit.jupiter.api.AfterAll;
@@ -107,7 +105,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
                     + "  DATE_COL       DATE\n"
                     + ")ENGINE=OLAP\n"
                     + "DUPLICATE KEY(`BIGINT_COL`)\n"
-                    + "DISTRIBUTED BY HASH(`BIGINT_COL`) BUCKETS 1\n"
+                    + "DISTRIBUTED BY HASH(`BIGINT_COL`) BUCKETS 3\n"
                     + "PROPERTIES (\n"
                     + "\"replication_num\" = \"1\",\n"
                     + "\"in_memory\" = \"false\","
@@ -422,14 +420,10 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
         starRocksCatalog.close();
     }
 
-    @DisabledOnContainer(
-            value = {},
-            type = {EngineType.SPARK, EngineType.FLINK},
-            disabledReason = "")
     @TestTemplate
-    public void testStarRocksRead(TestContainer container)
+    public void testStarRocksReadRowCount(TestContainer container)
             throws IOException, InterruptedException {
-        Container.ExecResult execResult = container.executeJob("/starrocks-to-assert.conf");
+        Container.ExecResult execResult = container.executeJob("/fake-to-starrocks.conf");
         log.error("execResult error: " + execResult.getStderr());
         Assertions.assertEquals(0, execResult.getExitCode());
     }
