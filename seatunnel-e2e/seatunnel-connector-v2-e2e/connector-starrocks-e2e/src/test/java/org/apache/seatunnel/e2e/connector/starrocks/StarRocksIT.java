@@ -423,7 +423,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
     @TestTemplate
     public void testStarRocksReadRowCount(TestContainer container)
             throws IOException, InterruptedException {
-        Container.ExecResult execResult = container.executeJob("/fake-to-starrocks.conf");
+        Container.ExecResult execResult = container.executeJob("/starrocks-to-assert.conf");
         Assertions.assertEquals(0, execResult.getExitCode());
     }
 }
