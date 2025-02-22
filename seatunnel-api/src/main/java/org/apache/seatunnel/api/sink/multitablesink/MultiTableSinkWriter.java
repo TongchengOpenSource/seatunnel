@@ -161,9 +161,6 @@ public class MultiTableSinkWriter
                                 instanceof SupportSchemaEvolutionSinkWriter) {
                             ((SupportSchemaEvolutionSinkWriter) sinkWriterEntry.getValue())
                                     .applySchemaChange(event);
-                        } else {
-                            // TODO remove deprecated method
-                            sinkWriterEntry.getValue().applySchemaChange(event);
                         }
                     }
                     log.info(

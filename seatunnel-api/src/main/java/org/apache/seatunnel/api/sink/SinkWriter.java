@@ -19,7 +19,6 @@ package org.apache.seatunnel.api.sink;
 
 import org.apache.seatunnel.api.common.metrics.MetricsContext;
 import org.apache.seatunnel.api.event.EventListener;
-import org.apache.seatunnel.api.table.schema.event.SchemaChangeEvent;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -45,10 +44,6 @@ public interface SinkWriter<T, CommitInfoT, StateT> {
      * @throws IOException throw IOException when write data failed.
      */
     void write(T element) throws IOException;
-
-    /** @deprecated instead by {@link SupportSchemaEvolutionSinkWriter} TODO: remove this method */
-    @Deprecated
-    default void applySchemaChange(SchemaChangeEvent event) throws IOException {}
 
     /**
      * prepare the commit, will be called before {@link #snapshotState(long checkpointId)}. If you
