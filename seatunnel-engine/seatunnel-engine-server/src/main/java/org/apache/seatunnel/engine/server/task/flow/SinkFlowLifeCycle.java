@@ -256,10 +256,11 @@ public class SinkFlowLifeCycle<T, CommitInfoT extends Serializable, AggregatedCo
                 SchemaChangeEvent event = (SchemaChangeEvent) record.getData();
                 if (writer instanceof SupportSchemaEvolutionSinkWriter) {
                     ((SupportSchemaEvolutionSinkWriter) writer).applySchemaChange(event);
-                } else {
-                    // todo remove deprecated method
-                    writer.applySchemaChange(event);
                 }
+                //                else {
+                //                    // todo remove deprecated method
+                //                    writer.applySchemaChange(event);
+                //                }
             } else {
                 if (prepareClose) {
                     return;
