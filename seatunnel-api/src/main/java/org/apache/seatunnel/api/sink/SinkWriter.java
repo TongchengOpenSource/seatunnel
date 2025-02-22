@@ -45,11 +45,6 @@ public interface SinkWriter<T, CommitInfoT, StateT> {
      */
     void write(T element) throws IOException;
 
-    //    /** @deprecated instead by {@link SupportSchemaEvolutionSinkWriter} TODO: remove this
-    // method */
-    //    @Deprecated
-    //    default void applySchemaChange(SchemaChangeEvent event) throws IOException {}
-
     /**
      * prepare the commit, will be called before {@link #snapshotState(long checkpointId)}. If you
      * need to use 2pc, you can return the commit info in this method, and receive the commit info
