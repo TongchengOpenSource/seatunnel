@@ -86,14 +86,7 @@ public class StartRocksSourceSplitEnumerator
                 log.info("Split table {} into {} splits.", table, newSplits.size());
                 addPendingSplit(newSplits);
             }
-            //                synchronized (stateLock) {
-            //                    assignSplit(readers);
-            //                }
         }
-        //            synchronized (stateLock) {
-        //                assignSplit(readers);
-        //                shouldEnumerate = false;
-        //            }
         synchronized (stateLock) {
             assignSplit(readers);
         }
