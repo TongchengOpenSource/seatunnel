@@ -39,9 +39,9 @@ public class EncryptTransformConfig {
                     .defaultValue(Encrypts.MD5.name())
                     .withDescription("the row kinds to include");
 
-    public static final Option<String> SEED =
+    public static final Option<Integer> SEED =
             Options.key("seed")
-                    .stringType()
+                    .intType()
                     .noDefaultValue()
                     .withDescription("the row kinds to include");
 }

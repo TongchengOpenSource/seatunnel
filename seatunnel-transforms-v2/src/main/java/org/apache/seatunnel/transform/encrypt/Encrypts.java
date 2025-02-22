@@ -33,9 +33,9 @@ public enum Encrypts {
 
     MURMUR3_32 {
         @Override
-        public String encrypt(String value, String seed) {
+        public String encrypt(String value, Integer seed) {
             HashFunction hashFunction;
-            if (StringUtils.isEmpty(seed)) {
+            if (seed == null) {
                 hashFunction = Hashing.murmur3_32();
             } else {
                 hashFunction = Hashing.murmur3_32(seed);
@@ -55,7 +55,7 @@ public enum Encrypts {
         throw new UnsupportedOperationException();
     }
 
-    public String encrypt(String value, String seed) {
+    public String encrypt(String value, Integer seed) {
         throw new UnsupportedOperationException();
     }
 }
