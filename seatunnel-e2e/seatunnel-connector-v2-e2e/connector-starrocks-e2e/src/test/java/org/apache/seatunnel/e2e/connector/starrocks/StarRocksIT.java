@@ -17,6 +17,8 @@
 
 package org.apache.seatunnel.e2e.connector.starrocks;
 
+import org.apache.seatunnel.e2e.common.container.EngineType;
+import org.apache.seatunnel.e2e.common.junit.DisabledOnContainer;
 import org.apache.seatunnel.shade.com.google.common.collect.Lists;
 
 import org.apache.seatunnel.api.table.catalog.CatalogTable;
@@ -424,6 +426,19 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
     public void testStarRocksReadRowCount(TestContainer container)
             throws IOException, InterruptedException {
         Container.ExecResult execResult = container.executeJob("/starrocks-to-assert.conf");
+        Assertions.assertEquals(0, execResult.getExitCode());
+    }
+
+    @DisabledOnContainer(
+            value = {},
+            type = {EngineType.SPARK, EngineType.FLINK},
+            disabledReason = "Currently SPARK/FLINK do not support multiple table read")
+    @TestTemplate
+    public void testStarRocksMultipleRead(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult =
+                container.executeJob("/starrocks-to-assert-with-multipletable.conf");
+        log.error("execResult error: " + execResult.getStderr());
         Assertions.assertEquals(0, execResult.getExitCode());
     }
 }
