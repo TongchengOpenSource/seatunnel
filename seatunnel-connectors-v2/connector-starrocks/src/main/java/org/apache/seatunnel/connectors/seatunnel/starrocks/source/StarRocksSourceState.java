@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @Setter
 @AllArgsConstructor
 public class StarRocksSourceState implements Serializable {
-    private boolean shouldEnumerate;
     private Map<Integer, List<StarRocksSourceSplit>> pendingSplit;
     private final ConcurrentLinkedQueue<String> pendingTables;
 }

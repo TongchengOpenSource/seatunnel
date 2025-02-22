@@ -494,7 +494,6 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
             throws IOException, InterruptedException {
         Container.ExecResult execResult =
                 container.executeJob("/starrocks-to-assert-with-multipletable.conf");
-        log.error("execResult error: " + execResult.getStderr());
         Assertions.assertEquals(0, execResult.getExitCode());
     }
 }

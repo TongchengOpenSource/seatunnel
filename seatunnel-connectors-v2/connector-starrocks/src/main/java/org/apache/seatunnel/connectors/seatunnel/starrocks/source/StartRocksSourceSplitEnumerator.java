@@ -18,7 +18,7 @@
 package org.apache.seatunnel.connectors.seatunnel.starrocks.source;
 
 import org.apache.seatunnel.api.source.SourceSplitEnumerator;
-import org.apache.seatunnel.common.exception.CommonErrorCodeDeprecated;
+import org.apache.seatunnel.common.exception.CommonErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.StarRocksQueryPlanReadClient;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.model.QueryPartition;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SourceConfig;
@@ -46,7 +46,6 @@ public class StartRocksSourceSplitEnumerator
     private final ConcurrentLinkedQueue<String> pendingTables;
 
     private final Object stateLock = new Object();
-    private volatile boolean shouldEnumerate;
     private final Context<StarRocksSourceSplit> context;
 
     public StartRocksSourceSplitEnumerator(
@@ -69,11 +68,8 @@ public class StartRocksSourceSplitEnumerator
 
         this.context = context;
         this.pendingSplit = new HashMap<>();
-        // todo
         this.pendingTables = new ConcurrentLinkedQueue<>(tables);
-        this.shouldEnumerate = sourceState == null;
         if (sourceState != null) {
-            this.shouldEnumerate = sourceState.isShouldEnumerate();
             this.pendingSplit.putAll(sourceState.getPendingSplit());
             this.pendingTables.addAll(sourceState.getPendingTables());
         }
@@ -82,24 +78,24 @@ public class StartRocksSourceSplitEnumerator
     @Override
     public void run() {
         Set<Integer> readers = context.registeredReaders();
-        if (shouldEnumerate) {
-            while (!pendingTables.isEmpty()) {
-                synchronized (stateLock) {
-                    String table = pendingTables.poll();
-                    log.info("Splitting table {}.", table);
-                    List<StarRocksSourceSplit> newSplits = getStarRocksSourceSplit(table);
-                    log.info("Split table {} into {} splits.", table, newSplits.size());
-                    addPendingSplit(newSplits);
-                }
-
-                synchronized (stateLock) {
-                    assignSplit(readers);
-                }
+        while (!pendingTables.isEmpty()) {
+            synchronized (stateLock) {
+                String table = pendingTables.poll();
+                log.info("Splitting table {}.", table);
+                List<StarRocksSourceSplit> newSplits = getStarRocksSourceSplit(table);
+                log.info("Split table {} into {} splits.", table, newSplits.size());
+                addPendingSplit(newSplits);
             }
-            //            synchronized (stateLock) {
-            //                assignSplit(readers);
-            //                shouldEnumerate = false;
-            //            }
+            //                synchronized (stateLock) {
+            //                    assignSplit(readers);
+            //                }
+        }
+        //            synchronized (stateLock) {
+        //                assignSplit(readers);
+        //                shouldEnumerate = false;
+        //            }
+        synchronized (stateLock) {
+            assignSplit(readers);
         }
 
         log.debug(
@@ -132,7 +128,7 @@ public class StartRocksSourceSplitEnumerator
     @Override
     public StarRocksSourceState snapshotState(long checkpointId) {
         synchronized (stateLock) {
-            return new StarRocksSourceState(shouldEnumerate, pendingSplit, pendingTables);
+            return new StarRocksSourceState(pendingSplit, pendingTables);
         }
     }
 
@@ -154,7 +150,7 @@ public class StartRocksSourceSplitEnumerator
     @Override
     public void handleSplitRequest(int subtaskId) {
         throw new StarRocksConnectorException(
-                CommonErrorCodeDeprecated.UNSUPPORTED_OPERATION,
+                CommonErrorCode.UNSUPPORTED_OPERATION,
                 String.format("Unsupported handleSplitRequest: %d", subtaskId));
     }
 
