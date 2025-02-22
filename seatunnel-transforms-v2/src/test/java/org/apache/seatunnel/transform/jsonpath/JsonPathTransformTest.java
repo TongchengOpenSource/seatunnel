@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.seatunnel.transform;
+package org.apache.seatunnel.transform.jsonpath;
 
 import org.apache.seatunnel.shade.com.google.common.collect.ImmutableMap;
 
@@ -32,8 +32,6 @@ import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 import org.apache.seatunnel.transform.common.ErrorHandleWay;
 import org.apache.seatunnel.transform.common.TransformCommonOptions;
 import org.apache.seatunnel.transform.exception.ErrorDataTransformException;
-import org.apache.seatunnel.transform.jsonpath.JsonPathTransform;
-import org.apache.seatunnel.transform.jsonpath.JsonPathTransformConfig;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
