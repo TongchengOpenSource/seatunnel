@@ -20,6 +20,7 @@ package org.apache.seatunnel.connectors.seatunnel.starrocks.source;
 import org.apache.seatunnel.api.source.Boundedness;
 import org.apache.seatunnel.api.source.Collector;
 import org.apache.seatunnel.api.source.SourceReader;
+import org.apache.seatunnel.api.table.catalog.TablePath;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.StarRocksBeReadClient;
@@ -104,7 +105,6 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
 
         QueryPartition partition = split.getPartition();
         String table = partition.getTable();
-        String database = partition.getDatabase();
         String beAddress = partition.getBeAddress();
         StarRocksBeReadClient client = null;
         if (clientsPools.containsKey(beAddress)) {
@@ -118,8 +118,7 @@ public class StarRocksSourceReader implements SourceReader<SeaTunnelRow, StarRoc
         client.openScanner(partition, seaTunnelRowType);
         while (client.hasNext()) {
             SeaTunnelRow seaTunnelRow = client.getNext();
-            log.info("seaTunnelRow: {}", seaTunnelRow.toString());
-            seaTunnelRow.setTableId(database + "." + table);
+            seaTunnelRow.setTableId(TablePath.of(table).toString());
             output.collect(seaTunnelRow);
         }
     }

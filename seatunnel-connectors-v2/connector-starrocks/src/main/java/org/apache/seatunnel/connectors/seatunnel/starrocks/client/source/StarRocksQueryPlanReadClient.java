@@ -71,7 +71,6 @@ public class StarRocksQueryPlanReadClient {
 
     public List<QueryPartition> findPartitions(String table) {
         QueryPlan queryPlan = getQueryPlan(genQuerySql(table), table);
-        List<String> nodeUrls = sourceConfig.getNodeUrls();
         Map<String, List<Long>> be2Tablets = selectBeForTablet(queryPlan);
         return tabletsMapToPartition(
                 be2Tablets, queryPlan.getQueryPlan(), sourceConfig.getDatabase(), table);

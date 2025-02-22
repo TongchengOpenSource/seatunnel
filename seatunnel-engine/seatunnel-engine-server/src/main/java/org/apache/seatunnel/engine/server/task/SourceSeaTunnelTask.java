@@ -87,7 +87,6 @@ public class SourceSeaTunnelTask<T, SplitT extends SourceSplit> extends SeaTunne
                 List<CatalogTable> producedCatalogTables =
                         sourceFlow.getAction().getSource().getProducedCatalogTables();
                 sourceProducedType = CatalogTableUtil.convertToDataType(producedCatalogTables);
-                LOGGER.info("sourceProducedType： " + sourceProducedType);
                 tablePaths =
                         producedCatalogTables.stream()
                                 .map(CatalogTable::getTableId)

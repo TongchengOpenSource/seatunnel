@@ -54,8 +54,7 @@ public class StarRocksSourceTableConfig implements Serializable {
     public static StarRocksSourceTableConfig parseStarRocksSourceConfig(ReadonlyConfig config) {
 
         String table = config.get(StarRocksSourceOptions.TABLE);
-        String dataBase = config.get(StarRocksSourceOptions.DATABASE);
-        TablePath tablePath = TablePath.of(dataBase, table);
+        TablePath tablePath = TablePath.of(table);
         TableSchema tableSchema = new ReadonlyConfigParser().parse(config);
         CatalogTable catalogTable =
                 CatalogTable.of(
