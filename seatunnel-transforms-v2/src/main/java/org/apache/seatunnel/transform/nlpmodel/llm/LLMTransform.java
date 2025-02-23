@@ -33,6 +33,7 @@ import org.apache.seatunnel.transform.nlpmodel.llm.remote.custom.CustomModel;
 import org.apache.seatunnel.transform.nlpmodel.llm.remote.kimiai.KimiAIModel;
 import org.apache.seatunnel.transform.nlpmodel.llm.remote.microsoft.MicrosoftModel;
 import org.apache.seatunnel.transform.nlpmodel.llm.remote.openai.OpenAIModel;
+import org.apache.seatunnel.transform.nlpmodel.llm.remote.zhipu.ZhipuAIModel;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -129,6 +130,16 @@ public class LLMTransform extends SingleFieldOutputTransform {
                                 config.get(LLMTransformConfig.MODEL),
                                 config.get(LLMTransformConfig.API_KEY),
                                 provider.usedLLMPath(config.get(LLMTransformConfig.API_PATH)));
+                break;
+            case ZHIPU:
+                model =
+                        new ZhipuAIModel(
+                                inputCatalogTable.getSeaTunnelRowType(),
+                                outputDataType.getSqlType(),
+                                config.get(LLMTransformConfig.INFERENCE_COLUMNS),
+                                config.get(LLMTransformConfig.PROMPT),
+                                config.get(LLMTransformConfig.MODEL),
+                                config.get(LLMTransformConfig.API_KEY));
                 break;
             case QIANFAN:
             default:
