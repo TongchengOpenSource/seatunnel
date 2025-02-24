@@ -142,6 +142,8 @@ public class EmbeddingTransform extends MultipleFieldOutputTransform {
                             new ZhipuModel(
                                     config.get(ModelTransformConfig.API_KEY),
                                     config.get(ModelTransformConfig.MODEL),
+                                    provider.usedEmbeddingPath(
+                                            config.get(ModelTransformConfig.API_PATH)),
                                     config.get(ModelTransformConfig.DIMENSION),
                                     config.get(
                                             EmbeddingTransformConfig

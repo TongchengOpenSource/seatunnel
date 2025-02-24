@@ -100,12 +100,6 @@
             <version>${mockwebserver.version}</version>
             <scope>test</scope>
         </dependency>
-        <!--        https://github.com/MetaGLM/zhipuai-sdk-java-v4-->
-        <dependency>
-            <groupId>cn.bigmodel.openapi</groupId>
-            <artifactId>oapi-java-sdk</artifactId>
-            <version>${zhipu.version}</version>
-        </dependency>
     </dependencies>
 
     <build>

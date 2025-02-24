@@ -26,6 +26,7 @@ import org.apache.seatunnel.transform.nlpmodel.embedding.remote.custom.CustomMod
 import org.apache.seatunnel.transform.nlpmodel.embedding.remote.doubao.DoubaoModel;
 import org.apache.seatunnel.transform.nlpmodel.embedding.remote.openai.OpenAIModel;
 import org.apache.seatunnel.transform.nlpmodel.embedding.remote.qianfan.QianfanModel;
+import org.apache.seatunnel.transform.nlpmodel.embedding.remote.zhipu.ZhipuModel;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -89,6 +90,26 @@ public class EmbeddingRequestJsonTest {
                         });
         Assertions.assertEquals(
                 "{\"input\":[\"Determine whether someone is Chinese or American by their name\"]}",
+                OBJECT_MAPPER.writeValueAsString(node));
+        model.close();
+    }
+
+    @Test
+    void testZhipuRequestJson() throws IOException {
+        ZhipuModel model =
+                new ZhipuModel(
+                        "apikey",
+                        "modelName",
+                        "https://open.bigmodel.cn/api/paas/v4/embeddings",
+                        64,
+                        1);
+        ObjectNode node =
+                model.createJsonNodeFromData(
+                        new Object[] {
+                            "Determine whether someone is Chinese or American by their name"
+                        });
+        Assertions.assertEquals(
+                "{\"model\":\"modelName\",\"dimensions\":64,\"input\":[\"Determine whether someone is Chinese or American by their name\"]}",
                 OBJECT_MAPPER.writeValueAsString(node));
         model.close();
     }
