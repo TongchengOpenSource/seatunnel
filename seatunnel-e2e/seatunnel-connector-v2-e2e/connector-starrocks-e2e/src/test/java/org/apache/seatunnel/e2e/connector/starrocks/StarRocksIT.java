@@ -485,10 +485,7 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
         Assertions.assertEquals(0, execResult.getExitCode());
     }
 
-    @DisabledOnContainer(
-            value = {},
-            type = {EngineType.SPARK, EngineType.FLINK},
-            disabledReason = "Currently SPARK/FLINK do not support multiple table read")
+
     @TestTemplate
     public void testStarRocksMultipleRead(TestContainer container)
             throws IOException, InterruptedException {
