@@ -92,4 +92,10 @@ public class ConsumerConfig extends Config {
                     .booleanType()
                     .defaultValue(false)
                     .withDescription("Optional flag to skip parse errors instead of failing.");
+
+    public static final Option<Integer> PULL_THREAD_NUMS =
+            Options.key("pullThreadNums")
+                    .intType()
+                    .defaultValue(20)
+                    .withDescription(".");
 }

@@ -151,6 +151,14 @@ public class RocketMqSource
         } else {
             baseConfigBuilder.pollTimeoutMillis(ConsumerConfig.POLL_TIMEOUT_MILLIS.defaultValue());
         }
+
+        if (config.hasPath(ConsumerConfig.PULL_THREAD_NUMS.key())) {
+            baseConfigBuilder.pullThreadNums(
+                    config.getInt(ConsumerConfig.PULL_THREAD_NUMS.key()));
+        } else {
+            baseConfigBuilder.pullThreadNums(ConsumerConfig.PULL_THREAD_NUMS.defaultValue());
+        }
+
         this.metadata.setBaseConfig(baseConfigBuilder.build());
 
         // auto commit

@@ -57,7 +57,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/** Tools for creating RocketMq topic and group. */
+/**
+ * Tools for creating RocketMq topic and group.
+ */
 public class RocketMqAdminUtil {
 
     public static String createUniqInstance(String prefix) {
@@ -68,7 +70,9 @@ public class RocketMqAdminUtil {
         return new AclClientRPCHook(new SessionCredentials(accessKey, secretKey));
     }
 
-    /** Init default lite pull consumer */
+    /**
+     * Init default lite pull consumer
+     */
     public static DefaultLitePullConsumer initDefaultLitePullConsumer(
             RocketMqBaseConfiguration config, boolean autoCommit) {
         DefaultLitePullConsumer consumer = null;
@@ -91,10 +95,13 @@ public class RocketMqAdminUtil {
         if (config.getBatchSize() != null) {
             consumer.setPullBatchSize(config.getBatchSize());
         }
+        consumer.setPullThreadNums(config.getPullThreadNums());
         return consumer;
     }
 
-    /** Init transaction producer */
+    /**
+     * Init transaction producer
+     */
     public static TransactionMQProducer initTransactionMqProducer(
             RocketMqBaseConfiguration config, TransactionListener listener) {
         RPCHook rpcHook = null;
@@ -158,7 +165,9 @@ public class RocketMqAdminUtil {
         return admin;
     }
 
-    /** Create rocketMq topic */
+    /**
+     * Create rocketMq topic
+     */
     public static void createTopic(RocketMqBaseConfiguration config, TopicConfig topicConfig) {
         DefaultMQAdminExt defaultMQAdminExt = null;
         try {
@@ -182,7 +191,9 @@ public class RocketMqAdminUtil {
         }
     }
 
-    /** check topic exist */
+    /**
+     * check topic exist
+     */
     public static boolean topicExist(RocketMqBaseConfiguration config, String topic) {
         DefaultMQAdminExt defaultMQAdminExt = null;
         boolean foundTopicRouteInfo = false;
@@ -212,7 +223,9 @@ public class RocketMqAdminUtil {
         return foundTopicRouteInfo;
     }
 
-    /** Get topic offsets */
+    /**
+     * Get topic offsets
+     */
     public static List<Map<MessageQueue, TopicOffset>> offsetTopics(
             RocketMqBaseConfiguration config, List<String> topics) {
         List<Map<MessageQueue, TopicOffset>> offsets = Lists.newArrayList();
@@ -225,9 +238,9 @@ public class RocketMqAdminUtil {
             }
             return offsets;
         } catch (MQClientException
-                | MQBrokerException
-                | RemotingException
-                | InterruptedException e) {
+                 | MQBrokerException
+                 | RemotingException
+                 | InterruptedException e) {
             throw new RocketMqConnectorException(
                     RocketMqConnectorErrorCode.GET_MIN_AND_MAX_OFFSETS_ERROR, e);
         } finally {
@@ -237,7 +250,9 @@ public class RocketMqAdminUtil {
         }
     }
 
-    /** Flat topics offsets */
+    /**
+     * Flat topics offsets
+     */
     public static Map<MessageQueue, TopicOffset> flatOffsetTopics(
             RocketMqBaseConfiguration config, List<String> topics) {
         Map<MessageQueue, TopicOffset> messageQueueTopicOffsets = Maps.newConcurrentMap();
@@ -249,7 +264,9 @@ public class RocketMqAdminUtil {
         return messageQueueTopicOffsets;
     }
 
-    /** Search offsets by timestamp */
+    /**
+     * Search offsets by timestamp
+     */
     public static Map<MessageQueue, Long> searchOffsetsByTimestamp(
             RocketMqBaseConfiguration config,
             Collection<MessageQueue> messageQueues,
@@ -273,7 +290,9 @@ public class RocketMqAdminUtil {
         }
     }
 
-    /** Get consumer group offset */
+    /**
+     * Get consumer group offset
+     */
     public static Map<MessageQueue, Long> currentOffsets(
             RocketMqBaseConfiguration config,
             List<String> topics,
@@ -296,9 +315,9 @@ public class RocketMqAdminUtil {
                                     messageQueue ->
                                             consumerOffsets.get(messageQueue).getConsumerOffset()));
         } catch (MQClientException
-                | MQBrokerException
-                | RemotingException
-                | InterruptedException e) {
+                 | MQBrokerException
+                 | RemotingException
+                 | InterruptedException e) {
             if (e instanceof MQClientException) {
                 if (((MQClientException) e).getResponseCode() == ResponseCode.TOPIC_NOT_EXIST) {
                     return Collections.emptyMap();

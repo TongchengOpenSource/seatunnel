@@ -38,6 +38,7 @@ public class RocketMqBaseConfiguration implements Serializable {
     // consumer
     private Integer batchSize;
     private Long pollTimeoutMillis;
+    private Integer pullThreadNums;
 
     // producer
     private Integer maxMessageSize;
@@ -99,6 +100,7 @@ public class RocketMqBaseConfiguration implements Serializable {
         return aclEnable == that.aclEnable
                 && batchSize == that.batchSize
                 && pollTimeoutMillis == that.pollTimeoutMillis
+                && pullThreadNums == that.pullThreadNums
                 && maxMessageSize == that.maxMessageSize
                 && sendMsgTimeout == that.sendMsgTimeout
                 && Objects.equals(namesrvAddr, that.namesrvAddr)
@@ -117,6 +119,7 @@ public class RocketMqBaseConfiguration implements Serializable {
                 secretKey,
                 batchSize,
                 pollTimeoutMillis,
+                pullThreadNums,
                 maxMessageSize,
                 sendMsgTimeout);
     }
@@ -142,6 +145,8 @@ public class RocketMqBaseConfiguration implements Serializable {
                 + batchSize
                 + ", pollTimeoutMillis="
                 + pollTimeoutMillis
+                + ", pullThreadNums="
+                + pullThreadNums
                 + ", maxMessageSize="
                 + maxMessageSize
                 + ", sendMsgTimeout="
@@ -164,6 +169,7 @@ public class RocketMqBaseConfiguration implements Serializable {
         // consumer
         private Integer batchSize;
         private Long pollTimeoutMillis;
+        private Integer pullThreadNums;
 
         // producer
         private Integer maxMessageSize;
@@ -213,6 +219,11 @@ public class RocketMqBaseConfiguration implements Serializable {
 
         public Builder pollTimeoutMillis(long consumerPullTimeoutMillis) {
             this.pollTimeoutMillis = consumerPullTimeoutMillis;
+            return this;
+        }
+
+        public Builder pullThreadNums(Integer pullThreadNums) {
+            this.pullThreadNums = pullThreadNums;
             return this;
         }
 
