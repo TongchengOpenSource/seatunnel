@@ -19,12 +19,10 @@ package org.apache.seatunnel.connectors.seatunnel.starrocks.source;
 
 import org.apache.seatunnel.api.source.SourceSplitEnumerator;
 import org.apache.seatunnel.common.exception.CommonError;
-import org.apache.seatunnel.common.exception.CommonErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.StarRocksQueryPlanReadClient;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.source.model.QueryPartition;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SourceConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksSourceTableConfig;
-import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -143,7 +141,8 @@ public class StartRocksSourceSplitEnumerator
 
     @Override
     public void handleSplitRequest(int subtaskId) {
-        throw CommonError.unsupportedOperation(String.format("SubTask: %d", subtaskId), "handleSplitRequest");
+        throw CommonError.unsupportedOperation(
+                String.format("SubTask: %d", subtaskId), "handleSplitRequest");
     }
 
     private void addPendingSplit(Collection<StarRocksSourceSplit> splits) {

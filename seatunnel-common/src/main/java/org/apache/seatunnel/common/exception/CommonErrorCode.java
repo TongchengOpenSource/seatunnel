@@ -78,8 +78,7 @@ public enum CommonErrorCode implements SeaTunnelErrorCode {
             "The datetime format '<datetime>' of field '<field>' is not supported. Please check the datetime format."),
     UNSUPPORTED_METHOD("COMMON-34", "'<identifier>' unsupported the method '<methodName>'"),
     KERBEROS_AUTHORIZED_FAILED("COMMON-35", "Kerberos authorized failed"),
-    CLOSE_FAILED(
-            "COMMON-36", "'<identifier>' close failed."),
+    CLOSE_FAILED("COMMON-36", "'<identifier>' close failed."),
     SEATUNNEL_ROW_SERIALIZE_FAILED(
             "COMMON-36", "Seatunnel row serialize failed. Row={ '<field>' }"),
     ;

@@ -304,8 +304,7 @@ public class CommonError {
         return new SeaTunnelRuntimeException(ILLEGAL_ARGUMENT, params);
     }
 
-    public static SeaTunnelRuntimeException closeFailed(
-            String identifier, Throwable cause) {
+    public static SeaTunnelRuntimeException closeFailed(String identifier, Throwable cause) {
         Map<String, String> params = new HashMap<>();
         params.put("identifier", identifier);
         return new SeaTunnelRuntimeException(CLOSE_FAILED, params, cause);
@@ -317,5 +316,4 @@ public class CommonError {
         params.put("row", row);
         return new SeaTunnelRuntimeException(SEATUNNEL_ROW_SERIALIZE_FAILED, params, cause);
     }
-
 }
