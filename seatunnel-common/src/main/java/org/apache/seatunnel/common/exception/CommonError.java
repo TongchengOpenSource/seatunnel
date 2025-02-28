@@ -297,10 +297,10 @@ public class CommonError {
         return new SeaTunnelRuntimeException(CommonErrorCode.UNSUPPORTED_METHOD, params);
     }
 
-    public static SeaTunnelRuntimeException illegalArgument(String argument, String message) {
+    public static SeaTunnelRuntimeException illegalArgument(String argument, String operation) {
         Map<String, String> params = new HashMap<>();
         params.put("argument", argument);
-        params.put("message", message);
+        params.put("operation", operation);
         return new SeaTunnelRuntimeException(ILLEGAL_ARGUMENT, params);
     }
 
