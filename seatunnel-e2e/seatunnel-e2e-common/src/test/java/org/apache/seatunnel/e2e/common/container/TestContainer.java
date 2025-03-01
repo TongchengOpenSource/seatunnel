@@ -59,6 +59,11 @@ public interface TestContainer extends TestResource {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    default Container.ExecResult executeServerCommand(String[] args)
+            throws IOException, InterruptedException {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     default Container.ExecResult savepointJob(String jobId)
             throws IOException, InterruptedException {
         throw new UnsupportedOperationException("Not implemented");

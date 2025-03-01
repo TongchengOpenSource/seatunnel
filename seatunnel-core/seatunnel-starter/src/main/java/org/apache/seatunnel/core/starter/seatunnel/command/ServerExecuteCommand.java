@@ -29,8 +29,13 @@ import org.apache.commons.lang3.JavaVersion;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 
+import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.cluster.Member;
+import com.hazelcast.core.HazelcastInstance;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,6 +53,11 @@ public class ServerExecuteCommand implements Command<ServerCommandArgs> {
     public void execute() {
         checkEnvironment();
         SeaTunnelConfig seaTunnelConfig = ConfigProvider.locateAndGetSeaTunnelConfig();
+
+        if (this.serverCommandArgs.isShowClusterMembers()) {
+            showClusterMembers();
+            return;
+        }
         String clusterRole = this.serverCommandArgs.getClusterRole();
         if (StringUtils.isNotBlank(clusterRole)) {
             if (EngineConfig.ClusterRole.MASTER.toString().equalsIgnoreCase(clusterRole)) {
@@ -95,6 +105,52 @@ public class ServerExecuteCommand implements Command<ServerCommandArgs> {
             }
         } else {
             return !SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_8);
+        }
+    }
+
+    private void showClusterMembers() {
+        HazelcastInstance client = null;
+        try {
+            String clusterName = serverCommandArgs.getClusterName();
+            if (StringUtils.isNotBlank(clusterName)) {
+                throw new SeaTunnelEngineException(
+                        "Cluster name is required. Please specify it using -cn or --cluster option.");
+            }
+            ClientConfig clientConfig = ConfigProvider.locateAndGetClientConfig();
+            clientConfig.setClusterName(clusterName);
+            client = HazelcastClient.newHazelcastClient(clientConfig);
+
+            if (!client.getLifecycleService().isRunning()) {
+                throw new SeaTunnelEngineException(
+                        String.format(
+                                "cluster: %s is not running, Please start the cluster first.",
+                                clusterName));
+            }
+
+            Set<Member> members = client.getCluster().getMembers();
+            if (members.isEmpty()) {
+                System.out.println("No active members found in the cluster.");
+                return;
+            }
+
+            System.out.println("Cluster Members Information:");
+            System.out.println("------------------------");
+            for (Member member : members) {
+                System.out.printf("Member ID: %s", member.getUuid());
+                System.out.printf("Address: %s", member.getAddress());
+                System.out.printf("Role: %s", member.isLiteMember() ? "Worker" : "Master");
+                System.out.printf("Version: %s\n", member.getVersion());
+            }
+        } catch (Exception e) {
+            throw new SeaTunnelEngineException("Failed to get cluster members information", e);
+        } finally {
+            if (client != null) {
+                try {
+                    client.shutdown();
+                } catch (Exception e) {
+                    log.warn("Failed to shutdown Hazelcast client", e);
+                }
+            }
         }
     }
 }
