@@ -227,6 +227,10 @@ public class RowTypeConverter {
                 DataField dataField = SchemaUtil.getDataField(fields, fieldName);
                 dataType = new TimestampType(((TimestampType) dataField.type()).getPrecision());
             }
+            if (typeRoot.equals(DataTypeRoot.TIME_WITHOUT_TIME_ZONE)) {
+                DataField dataField = SchemaUtil.getDataField(fields, fieldName);
+                dataType = new TimeType(((TimeType) dataField.type()).getPrecision());
+            }
             DataField dataField = new DataField(i, fieldName, dataType);
             dataFields[i] = dataField;
         }
