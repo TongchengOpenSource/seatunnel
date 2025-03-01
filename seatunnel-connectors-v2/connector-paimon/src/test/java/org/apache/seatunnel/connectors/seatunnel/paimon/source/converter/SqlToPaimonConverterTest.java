@@ -100,7 +100,7 @@ public class SqlToPaimonConverterTest {
                         + "float_col = 5.5 AND "
                         + "double_col = 6.6 AND "
                         + "date_col = '2022-01-01' AND "
-                        + "timestamp_col = '2022-01-01T12:00:00.123' AND"
+                        + "timestamp_col = '2022-01-01T12:00:00.123' AND "
                         + "time_col = '12:00:00.123'";
 
         PlainSelect plainSelect = convertToPlainSelect(query);
