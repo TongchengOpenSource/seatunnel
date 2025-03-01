@@ -178,8 +178,7 @@ public class RowTypeConverter {
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 LocalZonedTimestampType localZonedTimestampType =
                         (LocalZonedTimestampType) dataType;
-                seaTunnelDataType =
-                        paimonToSeaTunnelTypeVisitor.visit((LocalZonedTimestampType) dataType);
+                seaTunnelDataType = paimonToSeaTunnelTypeVisitor.visit(localZonedTimestampType);
                 physicalColumnBuilder.scale(localZonedTimestampType.getPrecision());
                 break;
             case ARRAY:
@@ -515,6 +514,11 @@ public class RowTypeConverter {
         @Override
         public SeaTunnelDataType<?> visit(TimestampType timestampType) {
             return LocalTimeType.LOCAL_DATE_TIME_TYPE;
+        }
+
+        @Override
+        public SeaTunnelDataType<?> visit(TimeType timeType) {
+            return LocalTimeType.LOCAL_TIME_TYPE;
         }
 
         @Override
