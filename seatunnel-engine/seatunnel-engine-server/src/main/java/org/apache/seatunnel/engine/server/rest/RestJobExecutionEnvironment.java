@@ -116,7 +116,7 @@ public class RestJobExecutionEnvironment extends AbstractJobEnvironment {
 
     public JobImmutableInformation build() {
         return new JobImmutableInformation(
-                Long.parseLong(jobConfig.getJobContext().getJobId()),
+                jobId,
                 jobConfig.getName(),
                 isStartWithSavePoint,
                 nodeEngine.getSerializationService(),

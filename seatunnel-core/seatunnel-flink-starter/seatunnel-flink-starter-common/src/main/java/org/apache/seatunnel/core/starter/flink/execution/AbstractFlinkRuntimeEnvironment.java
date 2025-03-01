@@ -17,6 +17,7 @@
 
 package org.apache.seatunnel.core.starter.flink.execution;
 
+import org.apache.seatunnel.core.starter.errorlimit.ErrorLimitConfig;
 import org.apache.seatunnel.shade.com.typesafe.config.Config;
 
 import org.apache.seatunnel.api.options.EnvCommonOptions;
@@ -272,5 +273,66 @@ public abstract class AbstractFlinkRuntimeEnvironment implements RuntimeEnvironm
                             PipelineOptions.CLASSPATHS,
                             classpath.stream().distinct().collect(Collectors.toList()));
                 });
+    }
+
+    public ErrorLimitConfig getErrorLimitConfig(Config config) {
+        ErrorLimitConfig errorLimitConfig = new ErrorLimitConfig();
+
+        String countKey = EnvCommonOptions.ERROR_LIMIT_COUNT.key();
+        String percentageKey = EnvCommonOptions.ERROR_LIMIT_PERCENTAGE.key();
+
+        try {
+            if (config.hasPath(countKey)) {
+                errorLimitConfig.setErrorLimitCount(config.getInt(countKey));
+                log.debug("Set error limit count from config file: {}", errorLimitConfig.getErrorLimitCount());
+            } else {
+                String envCount = System.getenv(countKey);
+                if (envCount != null) {
+                    try {
+                        int count = Integer.parseInt(envCount);
+                        errorLimitConfig.setErrorLimitCount(count);
+                        log.debug("Set error limit count from environment: {}", count);
+                    } catch (NumberFormatException e) {
+                        log.warn("Invalid error limit count in environment variable: {}", envCount);
+                    }
+                }
+            }
+
+            if (config.hasPath(percentageKey)) {
+                errorLimitConfig.setErrorLimitPercentage(config.getDouble(percentageKey));
+                log.debug("Set error limit percentage from config file: {}", errorLimitConfig.getErrorLimitPercentage());
+            } else {
+                String envPercentage = System.getenv(percentageKey);
+                if (envPercentage != null) {
+                    try {
+                        double percentage = Double.parseDouble(envPercentage);
+                        errorLimitConfig.setErrorLimitPercentage(percentage);
+                        log.debug("Set error limit percentage from environment: {}", percentage);
+                    } catch (NumberFormatException e) {
+                        log.warn("Invalid error limit percentage in environment variable: {}", envPercentage);
+                    }
+                }
+            }
+
+
+        } catch (Exception e) {
+            log.error("Failed to load error limit config", e);
+        }
+        validateErrorLimitConfig(errorLimitConfig);
+        return errorLimitConfig;
+    }
+
+    private void validateErrorLimitConfig(ErrorLimitConfig config) {
+        if (config.getErrorLimitCount() != null && config.getErrorLimitCount() < 0) {
+            throw new IllegalArgumentException("Error limit count must be positive");
+        }
+
+        if (config.getErrorLimitPercentage() != null) {
+            double percentage = config.getErrorLimitPercentage();
+            if (percentage < 0.0 || percentage > 1.0) {
+                throw new IllegalArgumentException(
+                        "Error limit percentage must be between 0.0 and 1.0, current value: " + percentage);
+            }
+        }
     }
 }

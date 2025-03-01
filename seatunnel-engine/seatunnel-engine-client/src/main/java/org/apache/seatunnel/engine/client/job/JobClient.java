@@ -154,21 +154,24 @@ public class JobClient {
     public JobMetricsRunner.JobMetricsSummary getJobMetricsSummary(Long jobId) {
         long sourceReadCount = 0L;
         long sinkWriteCount = 0L;
+        long errorRecordCount = 0L;
+        Double errorRecordPercentage = 0.0;
         String jobMetrics = getJobMetrics(jobId);
         try {
             JsonNode jsonNode = OBJECT_MAPPER.readTree(jobMetrics);
             JsonNode sourceReaders = jsonNode.get("SourceReceivedCount");
             JsonNode sinkWriters = jsonNode.get("SinkWriteCount");
+            JsonNode errorRecords = jsonNode.get("ErrorRecords");
             for (int i = 0; i < sourceReaders.size(); i++) {
                 JsonNode sourceReader = sourceReaders.get(i);
                 JsonNode sinkWriter = sinkWriters.get(i);
                 sourceReadCount += sourceReader.get("value").asLong();
                 sinkWriteCount += sinkWriter.get("value").asLong();
             }
-            return new JobMetricsRunner.JobMetricsSummary(sourceReadCount, sinkWriteCount);
+            return new JobMetricsRunner.JobMetricsSummary(sourceReadCount, sinkWriteCount, errorRecordCount, errorRecordPercentage);
             // Add NullPointerException because of metrics information can be empty like {}
         } catch (JsonProcessingException | NullPointerException e) {
-            return new JobMetricsRunner.JobMetricsSummary(sourceReadCount, sinkWriteCount);
+            return new JobMetricsRunner.JobMetricsSummary(sourceReadCount, sinkWriteCount, errorRecordCount, errorRecordPercentage);
         }
     }
 

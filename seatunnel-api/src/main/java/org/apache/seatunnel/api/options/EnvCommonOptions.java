@@ -107,4 +107,16 @@ public class EnvCommonOptions {
                     .mapType()
                     .noDefaultValue()
                     .withDescription("Define the worker where the job runs by tag");
+
+    public static final Option<Integer> ERROR_LIMIT_COUNT =
+            Options.key("error.limit.record")
+                    .intType()
+                    .noDefaultValue()
+                    .withDescription("The maximum number of error records allowed before failing the job");
+
+    public static final Option<Double> ERROR_LIMIT_PERCENTAGE =
+            Options.key("error.limit.percentage")
+                    .doubleType()
+                    .noDefaultValue()
+                    .withDescription("The maximum percentage of error records allowed before failing the job (0.0 to 1.0)");
 }

@@ -779,6 +779,7 @@ public class CoordinatorService {
         if (runningJobMaster == null) {
             return jobHistoryService.getJobMetrics(jobId);
         }
+
         JobMetrics jobMetrics = JobMetricsUtil.toJobMetrics(runningJobMaster.getCurrJobMetrics());
         JobMetrics jobMetricsImap = jobHistoryService.getJobMetrics(jobId);
         return jobMetricsImap != JobMetrics.empty() ? jobMetricsImap.merge(jobMetrics) : jobMetrics;

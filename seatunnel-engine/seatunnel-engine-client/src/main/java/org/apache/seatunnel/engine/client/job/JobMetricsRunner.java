@@ -63,6 +63,10 @@ public class JobMetricsRunner implements Runnable {
                             averageRead + "/s",
                             "Average Write Count",
                             averageWrite + "/s",
+                            "Average Write Count",
+                            averageWrite + "/s",
+                            "Average Write Count",
+                            averageWrite + "/s",
                             "Last Statistic Time",
                             DateTimeUtils.toString(
                                     lastRunTime, DateTimeUtils.Formatter.YYYY_MM_DD_HH_MM_SS),
@@ -82,5 +86,7 @@ public class JobMetricsRunner implements Runnable {
     public static class JobMetricsSummary {
         private long sourceReadCount;
         private long sinkWriteCount;
+        private long errorRecordCount;
+        private Double errorRecordPercentage;
     }
 }

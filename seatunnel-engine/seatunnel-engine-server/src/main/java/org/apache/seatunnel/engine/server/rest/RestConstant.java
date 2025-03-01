@@ -58,6 +58,7 @@ public class RestConstant {
     public static final String TABLE_SOURCE_RECEIVED_BYTES_PER_SECONDS =
             "TableSourceReceivedBytesPerSeconds";
     public static final String TABLE_SINK_WRITE_BYTES_PER_SECONDS = "TableSinkWriteBytesPerSeconds";
+    public static final String TABLE_SINK_WRITE_ERROR_RECORDS = "TableSinkWriteErrorRecords";
 
     public static final String CONTEXT_PATH = "/hazelcast/rest/maps";
     public static final String INSTANCE_CONTEXT_PATH = "/hazelcast/rest/instance";

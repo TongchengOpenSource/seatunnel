@@ -86,6 +86,7 @@ import static org.apache.seatunnel.api.common.metrics.MetricNames.SOURCE_RECEIVE
 import static org.apache.seatunnel.api.common.metrics.MetricNames.SOURCE_RECEIVED_COUNT;
 import static org.apache.seatunnel.api.common.metrics.MetricNames.SOURCE_RECEIVED_QPS;
 import static org.apache.seatunnel.engine.server.rest.RestConstant.TABLE_SINK_WRITE_BYTES;
+import static org.apache.seatunnel.engine.server.rest.RestConstant.TABLE_SINK_WRITE_ERROR_RECORDS;
 import static org.apache.seatunnel.engine.server.rest.RestConstant.TABLE_SINK_WRITE_BYTES_PER_SECONDS;
 import static org.apache.seatunnel.engine.server.rest.RestConstant.TABLE_SINK_WRITE_COUNT;
 import static org.apache.seatunnel.engine.server.rest.RestConstant.TABLE_SINK_WRITE_QPS;
@@ -238,7 +239,8 @@ public abstract class BaseService {
             TABLE_SOURCE_RECEIVED_COUNT,
             TABLE_SINK_WRITE_COUNT,
             TABLE_SOURCE_RECEIVED_BYTES,
-            TABLE_SINK_WRITE_BYTES
+            TABLE_SINK_WRITE_BYTES,
+            TABLE_SINK_WRITE_ERROR_RECORDS
         };
         String[] tableRateMetricsNames = {
             TABLE_SOURCE_RECEIVED_QPS,
