@@ -55,6 +55,8 @@ import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectItem;
+import org.apache.seatunnel.common.utils.DateUtils;
+import org.apache.seatunnel.common.utils.TimeUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -266,11 +268,9 @@ public class SqlToPaimonPredicateConverter {
                 case DOUBLE:
                     return Double.parseDouble(strValue);
                 case DATE:
-                    return DateTimeUtils.toInternal(
-                            org.apache.seatunnel.common.utils.DateUtils.parse(strValue));
+                    return DateTimeUtils.toInternal(DateUtils.parse(strValue));
                 case TIME_WITHOUT_TIME_ZONE:
-                    return DateTimeUtils.toInternal(
-                            org.apache.seatunnel.common.utils.TimeUtils.parse(strValue));
+                    return DateTimeUtils.toInternal(TimeUtils.parse(strValue));
                 case TIMESTAMP_WITHOUT_TIME_ZONE:
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     return Timestamp.fromLocalDateTime(
@@ -297,8 +297,6 @@ public class SqlToPaimonPredicateConverter {
             return ((TimeValue) expression).getValue();
         } else if (expression instanceof TimestampValue) {
             return ((TimestampValue) expression).getValue();
-        } else if (expression instanceof TimeValue) {
-            return ((TimeValue) expression).getValue();
         }
         throw new IllegalArgumentException("Unsupported expression value type: " + expression);
     }
