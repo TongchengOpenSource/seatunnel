@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 public class StarRocksQueryPlanReadClient {
     private RetryUtils.RetryMaterial retryMaterial;
     private SourceConfig sourceConfig;
-    private SeaTunnelRowType seaTunnelRowType;
     private final HttpHelper httpHelper = new HttpHelper();
     private final Map<String, StarRocksSourceTableConfig> tables;
 
