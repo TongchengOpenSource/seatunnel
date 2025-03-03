@@ -106,7 +106,7 @@ public class SqlToPaimonConverterTest {
         PlainSelect plainSelect = convertToPlainSelect(query);
         Predicate predicate =
                 SqlToPaimonPredicateConverter.convertSqlWhereToPaimonPredicate(
-                        rowType, plainSelect);
+                        rowType,  plainSelect);
 
         assertNotNull(predicate);
 
