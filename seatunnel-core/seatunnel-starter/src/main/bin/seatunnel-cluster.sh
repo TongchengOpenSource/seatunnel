@@ -152,6 +152,15 @@ CLASS_PATH=${APP_DIR}/lib/*:${APP_JAR}
 
 echo "start ${NODE_ROLE} node"
 
+# 添加错误限制参数
+if [ -n "$ERROR_LIMIT_COUNT" ]; then
+    JAVA_OPTS="$JAVA_OPTS -Derror.limit.record=$ERROR_LIMIT_COUNT"
+fi
+
+if [ -n "$ERROR_LIMIT_PERCENTAGE" ]; then
+    JAVA_OPTS="$JAVA_OPTS -Derror.limit.percentage=$ERROR_LIMIT_PERCENTAGE"
+fi
+
 if [[ $DAEMON == true && $HELP == false ]]; then
   if [[ ! -d ${APP_DIR}/logs ]]; then
     mkdir -p ${APP_DIR}/logs
