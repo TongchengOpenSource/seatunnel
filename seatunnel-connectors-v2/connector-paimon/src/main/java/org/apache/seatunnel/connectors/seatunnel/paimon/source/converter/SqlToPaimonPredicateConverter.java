@@ -17,6 +17,9 @@
 
 package org.apache.seatunnel.connectors.seatunnel.paimon.source.converter;
 
+import org.apache.seatunnel.common.utils.DateUtils;
+import org.apache.seatunnel.common.utils.TimeUtils;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.paimon.data.BinaryString;
 import org.apache.paimon.data.Decimal;
@@ -55,8 +58,6 @@ import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectItem;
-import org.apache.seatunnel.common.utils.DateUtils;
-import org.apache.seatunnel.common.utils.TimeUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
