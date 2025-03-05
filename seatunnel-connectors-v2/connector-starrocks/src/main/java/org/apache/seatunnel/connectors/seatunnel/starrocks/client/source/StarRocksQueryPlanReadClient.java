@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -140,6 +141,7 @@ public class StarRocksQueryPlanReadClient {
     private QueryPlan getQueryPlan(String querySQL, String table) {
 
         List<String> nodeUrls = sourceConfig.getNodeUrls();
+        Collections.shuffle(nodeUrls);
         Map<String, Object> bodyMap = new HashMap<>();
         bodyMap.put("sql", querySQL);
         String body = JsonUtils.toJsonString(bodyMap);
