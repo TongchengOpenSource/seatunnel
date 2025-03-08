@@ -34,6 +34,12 @@ public class MilvusSourceConfig extends MilvusCommonConfig {
                     .noDefaultValue()
                     .withDescription("Milvus collection to read");
 
+    public static final Option<String> PARTITION =
+            Options.key("partition")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("Milvus collection partition to read");
+
     public static final Option<Integer> BATCH_SIZE =
             Options.key("batch_size")
                     .intType()
