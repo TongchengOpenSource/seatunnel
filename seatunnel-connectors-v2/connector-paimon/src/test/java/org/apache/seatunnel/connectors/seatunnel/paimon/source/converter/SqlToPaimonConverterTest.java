@@ -166,7 +166,8 @@ public class SqlToPaimonConverterTest {
 
     @Test
     public void testConvertSqlWhereToPaimonPredicateWithAnd() {
-        String query = "SELECT * FROM table WHERE int_col > 3 AND double_col < 6.6";
+        String query =
+                "SELECT * FROM table WHERE int_col > 3 AND double_col < 6.6 AND double_col > 1";
 
         PlainSelect plainSelect = convertToPlainSelect(query);
         Predicate predicate =
@@ -177,14 +178,18 @@ public class SqlToPaimonConverterTest {
 
         PredicateBuilder builder = new PredicateBuilder(rowType);
         Predicate expectedPredicate =
-                PredicateBuilder.and(builder.greaterThan(7, 3), builder.lessThan(10, 6.6d));
+                PredicateBuilder.and(
+                        builder.greaterThan(7, 3),
+                        builder.lessThan(10, 6.6d),
+                        builder.greaterThan(10, 1));
 
         assertEquals(expectedPredicate.toString(), predicate.toString());
     }
 
     @Test
     public void testConvertSqlWhereToPaimonPredicateWithOr() {
-        String query = "SELECT * FROM table WHERE int_col > 3 OR double_col < 6.6";
+        String query =
+                "SELECT * FROM table WHERE int_col > 3 OR double_col < 6.6 OR int_col < 10.6 ";
 
         PlainSelect plainSelect = convertToPlainSelect(query);
         Predicate predicate =
@@ -195,7 +200,10 @@ public class SqlToPaimonConverterTest {
 
         PredicateBuilder builder = new PredicateBuilder(rowType);
         Predicate expectedPredicate =
-                PredicateBuilder.or(builder.greaterThan(7, 3), builder.lessThan(10, 6.6d));
+                PredicateBuilder.or(
+                        builder.greaterThan(7, 3),
+                        builder.lessThan(10, 6.6d),
+                        builder.lessThan(7, 10.6));
 
         assertEquals(expectedPredicate.toString(), predicate.toString());
     }

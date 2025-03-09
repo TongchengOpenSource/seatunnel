@@ -256,15 +256,11 @@ public class SqlToPaimonPredicateConverter {
                 case TINYINT:
                     return Byte.parseByte(strValue);
                 case SMALLINT:
-                    return Short.parseShort(strValue);
                 case INTEGER:
-                    return Integer.parseInt(strValue);
                 case BIGINT:
-                    return Long.parseLong(strValue);
                 case FLOAT:
-                    return Float.parseFloat(strValue);
                 case DOUBLE:
-                    return Double.parseDouble(strValue);
+                    return strValue;
                 case DATE:
                     return DateTimeUtils.toInternal(
                             org.apache.seatunnel.common.utils.DateUtils.parse(strValue));
