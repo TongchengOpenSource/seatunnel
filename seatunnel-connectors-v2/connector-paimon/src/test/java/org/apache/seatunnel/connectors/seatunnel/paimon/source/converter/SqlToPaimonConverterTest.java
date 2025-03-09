@@ -216,7 +216,6 @@ public class SqlToPaimonConverterTest {
                         + "OR smallint_col < 30.5 "
                         + "OR bigint_col >= 10000.5 "
                         + "OR double_col > 10 "
-                        + "OR tinyint_col > 1.2 "
                         + "OR float_col < 10";
 
         PlainSelect plainSelect = convertToPlainSelect(query);
@@ -235,7 +234,6 @@ public class SqlToPaimonConverterTest {
                         builder.lessThan(6, 30.5),
                         builder.greaterOrEqual(8, 10000.5),
                         builder.greaterThan(10, 10),
-                        builder.greaterThan(5, 1.2),
                         builder.lessThan(9, 10));
 
         assertEquals(expectedPredicate.toString(), predicate.toString());

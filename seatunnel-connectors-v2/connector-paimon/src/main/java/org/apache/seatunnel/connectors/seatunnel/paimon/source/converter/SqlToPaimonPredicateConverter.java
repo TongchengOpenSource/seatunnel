@@ -254,6 +254,7 @@ public class SqlToPaimonPredicateConverter {
                             decimalType.getPrecision(),
                             decimalType.getScale());
                 case TINYINT:
+                    return Byte.parseByte(strValue);
                 case SMALLINT:
                 case INTEGER:
                 case BIGINT:
