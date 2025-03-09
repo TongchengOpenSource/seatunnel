@@ -209,6 +209,39 @@ public class SqlToPaimonConverterTest {
     }
 
     @Test
+    public void testConvertSqlWhereToPaimonPredicateWithDifferentNumericType() {
+        String query =
+                "SELECT * FROM table WHERE int_col > 3 OR double_col < 6.6 "
+                        + "OR int_col < 10.6 "
+                        + "OR smallint_col < 30.5 "
+                        + "OR bigint_col >= 10000.5 "
+                        + "OR double_col > 10 "
+                        + "OR tinyint_col > 1.2 "
+                        + "OR float_col < 10";
+
+        PlainSelect plainSelect = convertToPlainSelect(query);
+        Predicate predicate =
+                SqlToPaimonPredicateConverter.convertSqlWhereToPaimonPredicate(
+                        rowType, plainSelect);
+
+        assertNotNull(predicate);
+
+        PredicateBuilder builder = new PredicateBuilder(rowType);
+        Predicate expectedPredicate =
+                PredicateBuilder.or(
+                        builder.greaterThan(7, 3),
+                        builder.lessThan(10, 6.6d),
+                        builder.lessThan(7, 10.6),
+                        builder.lessThan(6, 30.5),
+                        builder.greaterOrEqual(8, 10000.5),
+                        builder.greaterThan(10, 10),
+                        builder.greaterThan(5, 1.2),
+                        builder.lessThan(9, 10));
+
+        assertEquals(expectedPredicate.toString(), predicate.toString());
+    }
+
+    @Test
     public void testConvertSqlSelectToPaimonProjectionArrayWithALL() {
         String query = "SELECT * FROM table WHERE int_col > 3 OR double_col < 6.6";
 
