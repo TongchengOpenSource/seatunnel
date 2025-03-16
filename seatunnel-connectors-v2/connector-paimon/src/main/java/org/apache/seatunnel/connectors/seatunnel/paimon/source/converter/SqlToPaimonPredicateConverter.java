@@ -49,6 +49,7 @@ import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
+import net.sf.jsqlparser.expression.operators.relational.LikeExpression;
 import net.sf.jsqlparser.expression.operators.relational.MinorThan;
 import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
@@ -66,6 +67,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 public class SqlToPaimonPredicateConverter {
@@ -239,6 +242,20 @@ public class SqlToPaimonPredicateConverter {
             Object paimonEndVal =
                     convertValueByPaimonDataType(rowType, column.getColumnName(), jsqlEndVal);
             return builder.between(columnIndex, paimonStartVal, paimonEndVal);
+        } else if (expression instanceof LikeExpression) {
+            LikeExpression like = (LikeExpression) expression;
+            Column column = (Column) like.getLeftExpression();
+            int columnIndex = getColumnIndex(builder, column);
+            Object rightPredicate = getJSQLParserDataTypeValue(like.getRightExpression());
+            Object rightVal =
+                    convertValueByPaimonDataType(rowType, column.getColumnName(), rightPredicate);
+
+            Pattern BEGIN_PATTERN = Pattern.compile("([^%]+)%");
+            Matcher beginMatcher = BEGIN_PATTERN.matcher(rightVal.toString());
+            if (beginMatcher.matches()) {
+                return builder.startsWith(columnIndex, rightVal);
+            }
+
         } else if (expression instanceof Parenthesis) {
             Parenthesis parenthesis = (Parenthesis) expression;
             return parseExpressionToPredicate(builder, rowType, parenthesis.getExpression());

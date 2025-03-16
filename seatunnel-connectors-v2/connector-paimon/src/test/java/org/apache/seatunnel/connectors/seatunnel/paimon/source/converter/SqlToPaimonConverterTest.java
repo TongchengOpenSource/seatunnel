@@ -224,6 +224,23 @@ public class SqlToPaimonConverterTest {
     }
 
     @Test
+    public void testConvertSqlWhereToPaimonPredicateWithStartWith() {
+        String query = "SELECT * FROM table WHERE varchar_col like 'te%'";
+
+        PlainSelect plainSelect = convertToPlainSelect(query);
+        Predicate predicate =
+                SqlToPaimonPredicateConverter.convertSqlWhereToPaimonPredicate(
+                        rowType, plainSelect);
+
+        assertNotNull(predicate);
+
+        PredicateBuilder builder = new PredicateBuilder(rowType);
+        Predicate expectedPredicate = PredicateBuilder.or(builder.startsWith(1, "te%"));
+
+        assertEquals(expectedPredicate.toString(), predicate.toString());
+    }
+
+    @Test
     public void testConvertSqlSelectToPaimonProjectionArrayWithALL() {
         String query = "SELECT * FROM table WHERE int_col > 3 OR double_col < 6.6";
 
