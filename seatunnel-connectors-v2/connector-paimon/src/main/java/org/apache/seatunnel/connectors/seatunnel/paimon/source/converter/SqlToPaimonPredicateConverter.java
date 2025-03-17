@@ -251,9 +251,9 @@ public class SqlToPaimonPredicateConverter {
                     convertValueByPaimonDataType(rowType, column.getColumnName(), rightPredicate);
 
             Pattern BEGIN_PATTERN = Pattern.compile("([^%]+)%");
-            Matcher beginMatcher = BEGIN_PATTERN.matcher(rightVal.toString());
-            if (beginMatcher.matches()) {
-                return builder.startsWith(columnIndex, rightVal);
+            Matcher matcher = BEGIN_PATTERN.matcher(rightVal.toString());
+            if (matcher.matches()) {
+                return builder.startsWith(columnIndex, matcher.group(1));
             }
 
         } else if (expression instanceof Parenthesis) {
