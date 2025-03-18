@@ -235,7 +235,7 @@ public class SqlToPaimonConverterTest {
         assertNotNull(predicate);
 
         PredicateBuilder builder = new PredicateBuilder(rowType);
-        Predicate expectedPredicate = PredicateBuilder.or(builder.startsWith(1, "te%"));
+        Predicate expectedPredicate = PredicateBuilder.or(builder.startsWith(1, "te"));
 
         assertEquals(expectedPredicate.toString(), predicate.toString());
     }
