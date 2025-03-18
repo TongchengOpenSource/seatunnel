@@ -253,7 +253,7 @@ public class SqlToPaimonPredicateConverter {
             Pattern BEGIN_PATTERN = Pattern.compile("([^%]+)%");
             Matcher matcher = BEGIN_PATTERN.matcher(rightVal.toString());
             if (matcher.matches()) {
-                return builder.startsWith(columnIndex, matcher.group(1));
+                return builder.startsWith(columnIndex, BinaryString.fromString(matcher.group(1)));
             }
 
         } else if (expression instanceof Parenthesis) {
