@@ -605,4 +605,12 @@ public class MilvusIT extends TestSuiteBase implements TestResource {
         Assertions.assertDoesNotThrow(
                 () -> catalog.dropDatabase(TablePath.of("new_db.table"), false));
     }
+
+    @TestTemplate
+    public void testToMilvusWithMultipletable(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult =
+                container.executeJob("/milvus-to-assert-with-multipletable.conf");
+        Assertions.assertEquals(0, execResult.getExitCode());
+    }
 }
