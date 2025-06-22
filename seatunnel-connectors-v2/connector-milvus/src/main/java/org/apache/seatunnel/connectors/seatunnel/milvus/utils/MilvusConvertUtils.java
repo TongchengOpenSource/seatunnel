@@ -84,7 +84,8 @@ public class MilvusConvertUtils {
         String database = config.get(MilvusSourceOptions.DATABASE);
         List<String> collectionList = new ArrayList<>();
         if (StringUtils.isNotEmpty(config.get(MilvusSourceOptions.COLLECTION))) {
-            collectionList.add(config.get(MilvusSourceOptions.COLLECTION));
+            collectionList.addAll(
+                    Lists.newArrayList(config.get(MilvusSourceOptions.COLLECTION).split(",")));
         } else {
             R<ShowCollectionsResponse> response =
                     client.showCollections(

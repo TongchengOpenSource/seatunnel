@@ -351,6 +351,35 @@ public class MilvusIT extends TestSuiteBase implements TestResource {
 
         log.info("Collection created");
 
+
+        R<RpcStatus> ret3 =
+                milvusClient.createCollection(
+                        CreateCollectionParam.newBuilder()
+                                .withCollectionName(COLLECTION_NAME_2)
+                                .withFieldTypes(fieldsSchema)
+                                .build());
+
+        ret3 =
+                milvusClient.createIndex(
+                        CreateIndexParam.newBuilder()
+                                .withCollectionName(COLLECTION_NAME_2)
+                                .withFieldName(VECTOR_FIELD4)
+                                .withIndexType(IndexType.SPARSE_INVERTED_INDEX)
+                                .withMetricType(MetricType.IP)
+                                .build());
+
+        if (ret3.getStatus() != R.Status.Success.getCode()) {
+            throw new RuntimeException("Failed to create collection! Error: " + ret.getMessage());
+        }
+
+
+
+        milvusClient.loadCollection(
+                LoadCollectionParam.newBuilder()
+                        .withCollectionName(COLLECTION_NAME_2)
+                        .build());
+
+
         // Insert 10 records into the collection
         List<JsonObject> rows = new ArrayList<>();
         for (long i = 1L; i <= 10; ++i) {
@@ -388,10 +417,18 @@ public class MilvusIT extends TestSuiteBase implements TestResource {
                                 .withRows(rows)
                                 .build());
 
+        R<MutationResult> insertRet3 = milvusClient.insert(
+                InsertParam.newBuilder()
+                        .withCollectionName(COLLECTION_NAME_2)
+                        .withRows(rows)
+                        .build());
+
         if (insertRet.getStatus() != R.Status.Success.getCode()
-                || insertRet2.getStatus() != R.Status.Success.getCode()) {
+                || insertRet2.getStatus() != R.Status.Success.getCode() || insertRet3.getStatus() != R.Status.Success.getCode()) {
             throw new RuntimeException("Failed to insert! Error: " + insertRet.getMessage());
         }
+
+
     }
 
     @AfterAll
@@ -604,5 +641,13 @@ public class MilvusIT extends TestSuiteBase implements TestResource {
                 () -> catalog.createDatabase(TablePath.of("new_db.table"), false));
         Assertions.assertDoesNotThrow(
                 () -> catalog.dropDatabase(TablePath.of("new_db.table"), false));
+    }
+
+    @TestTemplate
+    public void testToMilvusWithMultipletable(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult =
+                container.executeJob("/milvus-to-assert-with-multipletable.conf");
+        Assertions.assertEquals(0, execResult.getExitCode());
     }
 }
