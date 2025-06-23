@@ -58,6 +58,7 @@ import io.milvus.param.partition.ShowPartitionsParam;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,9 @@ public class MilvusConvertUtils {
         List<String> collectionList = new ArrayList<>();
         if (StringUtils.isNotEmpty(config.get(MilvusSourceOptions.COLLECTION))) {
             collectionList.addAll(
-                    Lists.newArrayList(config.get(MilvusSourceOptions.COLLECTION).split(",")));
+                    Arrays.stream(config.get(MilvusSourceOptions.COLLECTION).split(","))
+                            .map(String::trim)
+                            .collect(Collectors.toList()));
         } else {
             R<ShowCollectionsResponse> response =
                     client.showCollections(
