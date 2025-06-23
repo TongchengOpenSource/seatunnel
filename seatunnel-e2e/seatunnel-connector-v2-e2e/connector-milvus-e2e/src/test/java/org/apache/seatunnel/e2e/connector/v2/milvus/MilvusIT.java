@@ -358,7 +358,46 @@ public class MilvusIT extends TestSuiteBase implements TestResource {
                                 .withFieldTypes(fieldsSchema)
                                 .build());
 
-        ret3 =
+        // Specify an index type on the vector field.
+        ret =
+                milvusClient.createIndex(
+                        CreateIndexParam.newBuilder()
+                                .withCollectionName(COLLECTION_NAME_2)
+                                .withFieldName(VECTOR_FIELD)
+                                .withIndexType(IndexType.FLAT)
+                                .withMetricType(MetricType.L2)
+                                .build());
+        if (ret.getStatus() != R.Status.Success.getCode()) {
+            throw new RuntimeException(
+                    "Failed to create index on vector field! Error: " + ret.getMessage());
+        }
+
+        ret =
+                milvusClient.createIndex(
+                        CreateIndexParam.newBuilder()
+                                .withCollectionName(COLLECTION_NAME_2)
+                                .withFieldName(VECTOR_FIELD2)
+                                .withIndexType(IndexType.FLAT)
+                                .withMetricType(MetricType.L2)
+                                .build());
+        if (ret.getStatus() != R.Status.Success.getCode()) {
+            throw new RuntimeException(
+                    "Failed to create index on vector field! Error: " + ret.getMessage());
+        }
+        ret =
+                milvusClient.createIndex(
+                        CreateIndexParam.newBuilder()
+                                .withCollectionName(COLLECTION_NAME_2)
+                                .withFieldName(VECTOR_FIELD3)
+                                .withIndexType(IndexType.BIN_FLAT)
+                                .withMetricType(MetricType.HAMMING)
+                                .build());
+        if (ret.getStatus() != R.Status.Success.getCode()) {
+            throw new RuntimeException(
+                    "Failed to create index on vector field! Error: " + ret.getMessage());
+        }
+
+        ret =
                 milvusClient.createIndex(
                         CreateIndexParam.newBuilder()
                                 .withCollectionName(COLLECTION_NAME_2)
@@ -366,6 +405,10 @@ public class MilvusIT extends TestSuiteBase implements TestResource {
                                 .withIndexType(IndexType.SPARSE_INVERTED_INDEX)
                                 .withMetricType(MetricType.IP)
                                 .build());
+        if (ret.getStatus() != R.Status.Success.getCode()) {
+            throw new RuntimeException(
+                    "Failed to create index on vector field! Error: " + ret.getMessage());
+        }
 
         if (ret3.getStatus() != R.Status.Success.getCode()) {
             throw new RuntimeException("Failed to create collection! Error: " + ret.getMessage());
