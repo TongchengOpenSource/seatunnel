@@ -31,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ public class PaimonConfig implements Serializable {
     protected String warehouse;
     protected String namespace;
     protected String table;
+    private List<PaimonSourceTableConfig> tableConfigList = new ArrayList<>();
     protected String hdfsSitePath;
     protected Map<String, String> hadoopConfProps;
     protected String hadoopConfPath;

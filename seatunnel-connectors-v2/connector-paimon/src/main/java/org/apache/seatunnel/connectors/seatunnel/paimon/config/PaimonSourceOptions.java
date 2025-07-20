@@ -19,6 +19,10 @@ package org.apache.seatunnel.connectors.seatunnel.paimon.config;
 
 import org.apache.seatunnel.api.configuration.Option;
 import org.apache.seatunnel.api.configuration.Options;
+import org.apache.seatunnel.shade.com.fasterxml.jackson.core.type.TypeReference;
+
+import java.util.List;
+import java.util.Map;
 
 public class PaimonSourceOptions extends PaimonBaseOptions {
 
@@ -27,4 +31,16 @@ public class PaimonSourceOptions extends PaimonBaseOptions {
                     .stringType()
                     .noDefaultValue()
                     .withDescription("The query of paimon source");
+
+    public static final Option<List<Map<String, Object>>> TABLE_LIST =
+            Options.key("table_list")
+                    .type(new TypeReference<List<Map<String, Object>>>() {})
+                    .noDefaultValue()
+                    .withDescription("Paimon multi-table configuration list");
+
+    public static final Option<String> SCAN_FILTER =
+            Options.key("scan_filter")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("Scan filter expression for Paimon table");
 }
