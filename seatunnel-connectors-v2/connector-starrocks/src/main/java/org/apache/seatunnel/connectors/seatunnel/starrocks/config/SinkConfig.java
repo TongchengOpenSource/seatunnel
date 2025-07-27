@@ -64,6 +64,7 @@ public class SinkConfig implements Serializable {
     private String customSql;
 
     private int httpSocketTimeout;
+    private boolean enable2PC;
 
     @Getter private final Map<String, Object> streamLoadProps = new HashMap<>();
 
@@ -98,6 +99,7 @@ public class SinkConfig implements Serializable {
         sinkConfig.setDataSaveMode(config.get(StarRocksSinkOptions.DATA_SAVE_MODE));
         sinkConfig.setCustomSql(config.get(StarRocksSinkOptions.CUSTOM_SQL));
         sinkConfig.setHttpSocketTimeout(config.get(StarRocksSinkOptions.HTTP_SOCKET_TIMEOUT_MS));
+        sinkConfig.setEnable2PC(config.get(StarRocksSinkOptions.ENABLE_2PC));
         return sinkConfig;
     }
 }

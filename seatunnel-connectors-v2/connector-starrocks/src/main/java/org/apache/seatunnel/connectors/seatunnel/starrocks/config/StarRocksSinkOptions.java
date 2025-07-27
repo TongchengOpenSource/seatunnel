@@ -155,4 +155,11 @@ public class StarRocksSinkOptions extends StarRocksBaseOptions {
                     .stringType()
                     .noDefaultValue()
                     .withDescription("when data_save_mode selects CUSTOM_PROCESSING custom SQL");
+
+    public static final Option<Boolean> ENABLE_2PC =
+            Options.key("enable_2pc")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription(
+                            "Whether to enable two-phase commit for transaction stream load");
 }

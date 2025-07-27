@@ -17,10 +17,13 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.sink;
 
+import org.apache.seatunnel.api.serialization.Serializer;
 import org.apache.seatunnel.api.sink.DataSaveMode;
 import org.apache.seatunnel.api.sink.DefaultSaveModeHandler;
 import org.apache.seatunnel.api.sink.SaveModeHandler;
 import org.apache.seatunnel.api.sink.SchemaSaveMode;
+import org.apache.seatunnel.api.sink.SeaTunnelSink;
+import org.apache.seatunnel.api.sink.SinkCommitter;
 import org.apache.seatunnel.api.sink.SinkWriter;
 import org.apache.seatunnel.api.sink.SupportMultiTableSink;
 import org.apache.seatunnel.api.sink.SupportSaveMode;
@@ -31,18 +34,24 @@ import org.apache.seatunnel.api.table.catalog.TablePath;
 import org.apache.seatunnel.api.table.catalog.TableSchema;
 import org.apache.seatunnel.api.table.schema.SchemaChangeType;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
-import org.apache.seatunnel.connectors.seatunnel.common.sink.AbstractSimpleSink;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.catalog.StarRocksCatalog;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.catalog.StarRocksCatalogFactory;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksBaseOptions;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitInfo;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitInfoSerializer;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitter;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class StarRocksSink extends AbstractSimpleSink<SeaTunnelRow, Void>
-        implements SupportSaveMode, SupportSchemaEvolutionSink, SupportMultiTableSink {
+public class StarRocksSink
+        implements SeaTunnelSink<SeaTunnelRow, Void, StarRocksCommitInfo, StarRocksCommitInfo>,
+                SupportSaveMode,
+                SupportSchemaEvolutionSink,
+                SupportMultiTableSink {
 
     private final TableSchema tableSchema;
     private final SinkConfig sinkConfig;
@@ -67,6 +76,25 @@ public class StarRocksSink extends AbstractSimpleSink<SeaTunnelRow, Void>
     public StarRocksSinkWriter createWriter(SinkWriter.Context context) {
         TablePath sinkTablePath = catalogTable.getTablePath();
         return new StarRocksSinkWriter(sinkConfig, tableSchema, sinkTablePath);
+    }
+
+    @Override
+    public SinkWriter<SeaTunnelRow, StarRocksCommitInfo, Void> restoreWriter(
+            SinkWriter.Context context, List<Void> states) throws IOException {
+        return createWriter(context);
+    }
+
+    @Override
+    public Optional<Serializer<Void>> getWriterStateSerializer() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Serializer<StarRocksCommitInfo>> getCommitInfoSerializer() {
+        if (sinkConfig.isEnable2PC()) {
+            return Optional.of(new StarRocksCommitInfoSerializer());
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -96,6 +124,14 @@ public class StarRocksSink extends AbstractSimpleSink<SeaTunnelRow, Void>
     @Override
     public Optional<CatalogTable> getWriteCatalogTable() {
         return Optional.of(catalogTable);
+    }
+
+    @Override
+    public Optional<SinkCommitter<StarRocksCommitInfo>> createCommitter() throws IOException {
+        if (sinkConfig.isEnable2PC()) {
+            return Optional.of(new StarRocksCommitter(sinkConfig));
+        }
+        return Optional.empty();
     }
 
     @Override

@@ -17,6 +17,7 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.sink;
 
+import org.apache.seatunnel.api.sink.SinkWriter;
 import org.apache.seatunnel.api.sink.SupportMultiTableSinkWriter;
 import org.apache.seatunnel.api.sink.SupportSchemaEvolutionSinkWriter;
 import org.apache.seatunnel.api.table.catalog.TablePath;
@@ -27,13 +28,14 @@ import org.apache.seatunnel.api.table.schema.handler.TableSchemaChangeEventDispa
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 import org.apache.seatunnel.common.exception.CommonError;
-import org.apache.seatunnel.connectors.seatunnel.common.sink.AbstractSinkWriter;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.StarRocksSinkManager;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.client.StarRocksTransactionSinkManager;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksBaseOptions;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.StarRocksCsvSerializer;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.StarRocksISerializer;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.StarRocksJsonSerializer;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitInfo;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.util.SchemaUtils;
 
 import lombok.SneakyThrows;
@@ -43,13 +45,18 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
-public class StarRocksSinkWriter extends AbstractSinkWriter<SeaTunnelRow, Void>
-        implements SupportMultiTableSinkWriter<Void>, SupportSchemaEvolutionSinkWriter {
+public class StarRocksSinkWriter
+        implements SinkWriter<SeaTunnelRow, StarRocksCommitInfo, Void>,
+                SupportMultiTableSinkWriter<StarRocksCommitInfo>,
+                SupportSchemaEvolutionSinkWriter {
     private StarRocksISerializer serializer;
     private StarRocksSinkManager manager;
+    private StarRocksTransactionSinkManager transactionManager;
     private TableSchema tableSchema;
     private final SinkConfig sinkConfig;
     private final TablePath sinkTablePath;
@@ -61,9 +68,15 @@ public class StarRocksSinkWriter extends AbstractSinkWriter<SeaTunnelRow, Void>
         this.tableSchema = tableSchema;
         SeaTunnelRowType seaTunnelRowType = tableSchema.toPhysicalRowDataType();
         this.serializer = createSerializer(sinkConfig, seaTunnelRowType);
-        this.manager = new StarRocksSinkManager(sinkConfig, tableSchema);
         this.sinkConfig = sinkConfig;
         this.sinkTablePath = tablePath;
+
+        // Initialize appropriate manager based on 2PC configuration
+        if (sinkConfig.isEnable2PC()) {
+            this.transactionManager = new StarRocksTransactionSinkManager(sinkConfig);
+        } else {
+            this.manager = new StarRocksSinkManager(sinkConfig, tableSchema);
+        }
     }
 
     @Override
@@ -74,7 +87,12 @@ public class StarRocksSinkWriter extends AbstractSinkWriter<SeaTunnelRow, Void>
         } catch (Exception e) {
             throw CommonError.seatunnelRowSerializeFailed(element.toString(), e);
         }
-        manager.write(record);
+
+        if (sinkConfig.isEnable2PC()) {
+            transactionManager.write(record);
+        } else {
+            manager.write(record);
+        }
     }
 
     @Override
@@ -82,7 +100,20 @@ public class StarRocksSinkWriter extends AbstractSinkWriter<SeaTunnelRow, Void>
         this.tableSchema = tableSchemaChangeEventDispatcher.reset(tableSchema).apply(event);
         SeaTunnelRowType seaTunnelRowType = tableSchema.toPhysicalRowDataType();
         this.serializer = createSerializer(sinkConfig, seaTunnelRowType);
-        this.manager = new StarRocksSinkManager(sinkConfig, tableSchema);
+
+        // Reinitialize appropriate manager based on 2PC configuration
+        if (sinkConfig.isEnable2PC()) {
+            if (this.transactionManager != null) {
+                try {
+                    this.transactionManager.close();
+                } catch (IOException e) {
+                    log.warn("Error closing previous transaction manager", e);
+                }
+            }
+            this.transactionManager = new StarRocksTransactionSinkManager(sinkConfig);
+        } else {
+            this.manager = new StarRocksSinkManager(sinkConfig, tableSchema);
+        }
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -104,16 +135,36 @@ public class StarRocksSinkWriter extends AbstractSinkWriter<SeaTunnelRow, Void>
 
     @SneakyThrows
     @Override
-    public Optional<Void> prepareCommit() {
-        // Flush to storage before snapshot state is performed
-        manager.flush();
-        return super.prepareCommit();
+    public Optional<StarRocksCommitInfo> prepareCommit() {
+        if (sinkConfig.isEnable2PC()) {
+            // For transaction mode, prepare commit and return commit info
+            StarRocksCommitInfo commitInfo = transactionManager.prepareCommit();
+            return Optional.ofNullable(commitInfo);
+        } else {
+            // For non-transaction mode, just flush
+            manager.flush();
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public List<Void> snapshotState(long checkpointId) throws IOException {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void abortPrepare() {
+        if (sinkConfig.isEnable2PC() && transactionManager != null) {
+            transactionManager.abortTransaction();
+        }
     }
 
     @Override
     public void close() throws IOException {
         try {
-            if (manager != null) {
+            if (sinkConfig.isEnable2PC() && transactionManager != null) {
+                transactionManager.close();
+            } else if (manager != null) {
                 manager.close();
             }
         } catch (IOException e) {

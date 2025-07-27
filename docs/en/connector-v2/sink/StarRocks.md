@@ -12,7 +12,7 @@ import ChangeLog from '../changelog/connector-starrocks.md';
 
 ## Key Features
 
-- [ ] [exactly-once](../../concept/connector-v2-features.md)
+- [x] [exactly-once](../../concept/connector-v2-features.md)
 - [x] [cdc](../../concept/connector-v2-features.md)
 - [x] [support multiple table write](../../concept/connector-v2-features.md)
 
@@ -20,6 +20,15 @@ import ChangeLog from '../changelog/connector-starrocks.md';
 
 Used to send data to StarRocks. Both support streaming and batch mode.
 The internal implementation of StarRocks sink connector is cached and imported by stream load in batches.
+
+### Transaction Stream Load Support
+
+Starting from version 2.4.0, the StarRocks connector supports transaction stream load, providing exactly-once semantics:
+
+- **Two-Phase Commit (2PC)**: Implements cross-system two-phase commit through "prepare transaction" and "commit transaction"
+- **Exactly-Once Semantics**: Works with stream processing engines like Flink to achieve exactly-once data import
+- **Performance Improvement**: Merges multiple small batches of data in one import job before "committing transaction"
+- **Transaction Management**: Supports complete transaction lifecycle including begin, write, prepare, commit, and rollback
 
 ## Using Dependency
 
@@ -54,6 +63,7 @@ The internal implementation of StarRocks sink connector is cached and imported b
 | schema_save_mode            | Enum    | no       | CREATE_SCHEMA_WHEN_NOT_EXIST | Before the synchronous task is turned on, different treatment schemes are selected for the existing surface structure of the target side.                                                                         |
 | data_save_mode              | Enum    | no       | APPEND_DATA                  | Before the synchronous task is turned on, different processing schemes are selected for data existing data on the target side.                                                                                    |
 | custom_sql                  | String  | no       | -                            | When data_save_mode selects CUSTOM_PROCESSING, you should fill in the CUSTOM_SQL parameter. This parameter usually fills in a SQL that can be executed. SQL will be executed before synchronization tasks.        |
+| enable_2pc                  | boolean | no       | false                        | Whether to enable two-phase commit transaction mode, which can guarantee exactly-once semantics when enabled                                                                                                       |
 
 ### save_mode_create_template
 
@@ -138,6 +148,20 @@ Option introduction：
 ### custom_sql[String]
 
 When data_save_mode selects CUSTOM_PROCESSING, you should fill in the CUSTOM_SQL parameter. This parameter usually fills in a SQL that can be executed. SQL will be executed before synchronization tasks.
+
+### enable_2pc[boolean]
+
+Whether to enable two-phase commit transaction mode. When enabled, it will use StarRocks transaction stream load interface, providing the following features:
+
+- **Exactly-Once Semantics**: Guarantees no data duplication or loss through two-phase commit
+- **Transaction Management**: Supports transaction begin, prepare, commit, and rollback operations
+- **Performance Optimization**: Reduces import versions and improves import performance
+- **Fault Tolerance**: Supports transaction recovery after task restart
+
+**Important Notes**:
+- In transaction mode, each transaction has a unique label, duplicate labels will cause transaction failure
+- Transactions have a default timeout, after which they will be automatically rolled back
+- Current version only supports single database and single table transactions
 
 ## Data Type Mapping
 
@@ -388,6 +412,70 @@ sink {
   }
 }
 ```
+
+### Transaction Stream Load Examples
+
+#### Basic Transaction Mode Example
+
+```hocon
+sink {
+  StarRocks {
+    nodeUrls = ["e2e_starRocksdb:8030"]
+    base-url = "jdbc:mysql://e2e_starRocksdb:9030/"
+    username = root
+    password = ""
+    database = "test"
+    table = "e2e_table_sink"
+    batch_max_rows = 1000
+
+    # Enable transaction mode for exactly-once semantics
+    enable_2pc = true
+
+    starrocks.config = {
+      format = "JSON"
+      strip_outer_array = true
+    }
+  }
+}
+```
+
+#### Transaction Mode with Flink CDC
+
+```hocon
+env {
+  parallelism = 1
+  job.mode = "STREAMING"
+  checkpoint.interval = 10000
+}
+
+source {
+  MySQL-CDC {
+    base-url = "jdbc:mysql://mysql_server:3306/test"
+    username = "root"
+    password = "password"
+    table-names = ["test.user_table"]
+  }
+}
+
+sink {
+  StarRocks {
+    nodeUrls = ["e2e_starRocksdb:8030"]
+    base-url = "jdbc:mysql://e2e_starRocksdb:9030/"
+    username = root
+    password = ""
+    database = "test"
+    table = "user_table"
+
+    enable_2pc = true
+    enable_upsert_delete = true
+    starrocks.config = {
+      format = "JSON"
+      strip_outer_array = true
+    }
+  }
+}
+```
+
 
 ## Changelog
 

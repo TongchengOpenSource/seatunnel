@@ -12,13 +12,22 @@ import ChangeLog from '../changelog/connector-starrocks.md';
 
 ## 主要特性
 
-- [ ] [精准一次](../../concept/connector-v2-features.md)
+- [x] [精准一次](../../concept/connector-v2-features.md)
 - [x] [cdc](../../concept/connector-v2-features.md)
 
 ## 描述
 
 该接收器用于将数据写入到StarRocks中。支持批和流两种模式。
 StarRocks数据接收器内部实现采用了缓存，通过stream load将数据批导入。
+
+### 事务 Stream Load 支持
+
+从 2.4.0 版本开始，StarRocks 连接器支持事务 Stream Load，提供精准一次（Exactly-Once）语义保证：
+
+- **两阶段提交（2PC）**：通过"预提交事务"、"提交事务"实现跨系统的两阶段提交
+- **精确一次语义**：配合 Flink 等流处理引擎实现精确一次数据导入
+- **提升导入性能**：在一个导入作业中按需合并发送多次小批量的数据后"提交事务"
+- **事务管理**：支持事务开始、数据写入、预提交、提交和回滚的完整生命周期
 
 ## 依赖
 
@@ -53,6 +62,7 @@ StarRocks数据接收器内部实现采用了缓存，通过stream load将数据
 | schema_save_mode            | Enum    | no   | CREATE_SCHEMA_WHEN_NOT_EXIST | 在同步任务打开之前，针对目标端已存在的表结构选择不同的处理方法                                                                                     |
 | data_save_mode              | Enum    | no   | APPEND_DATA                  | 在同步任务打开之前，针对目标端已存在的数据选择不同的处理方法                                                                                      |
 | custom_sql                  | String  | no   | -                            | 当data_save_mode设置为CUSTOM_PROCESSING时，必须同时设置CUSTOM_SQL参数。CUSTOM_SQL的值为可执行的SQL语句，在同步任务开启前SQL将会被执行                     |
+| enable_2pc                  | boolean | no   | false                        | 是否启用两阶段提交事务模式，启用后可以保证精准一次语义                                                                                           |
 
 ### save_mode_create_template
 
@@ -132,6 +142,20 @@ table选项参数可以填入一任意表名，这个名字最终会被用作目
 ### custom_sql[String]
 
 当data_save_mode设置为CUSTOM_PROCESSING时，必须同时设置CUSTOM_SQL参数。CUSTOM_SQL的值为可执行的SQL语句，在同步任务开启前SQL将会被执行。
+
+### enable_2pc[boolean]
+
+是否启用两阶段提交事务模式。启用后将使用 StarRocks 事务 Stream Load 接口，提供以下特性：
+
+- **精准一次语义**：通过两阶段提交保证数据不重复不丢失
+- **事务管理**：支持事务的开始、预提交、提交和回滚
+- **性能优化**：减少数据导入的版本，提升导入性能
+- **容错能力**：支持任务重启后的事务恢复
+
+**注意事项**：
+- 事务模式下，每个事务都有唯一的标签，重复标签会导致事务失败
+- 事务有默认的超时时间，超时后会自动回滚
+- 当前版本只支持单库单表事务
 
 ## 数据类型映射
 
@@ -295,6 +319,68 @@ sink {
       format = "CSV"
       column_separator = "\\x01"
       row_delimiter = "\\x02"
+    }
+  }
+}
+```
+
+### 事务 Stream Load 示例
+
+#### 启用事务模式的基本示例
+
+```hocon
+sink {
+  StarRocks {
+    nodeUrls = ["e2e_starRocksdb:8030"]
+    base-url = "jdbc:mysql://e2e_starRocksdb:9030/"
+    username = root
+    password = ""
+    database = "test"
+    table = "e2e_table_sink"
+    batch_max_rows = 1000
+
+    # 启用事务模式，保证精准一次语义
+    enable_2pc = true
+
+    starrocks.config = {
+      format = "JSON"
+      strip_outer_array = true
+    }
+  }
+}
+```
+
+#### 与 Flink CDC 结合使用事务模式
+
+```hocon
+env {
+  parallelism = 1
+  job.mode = "STREAMING"
+  checkpoint.interval = 10000
+}
+
+source {
+  MySQL-CDC {
+    base-url = "jdbc:mysql://mysql_server:3306/test"
+    username = "root"
+    password = "password"
+    table-names = ["test.user_table"]
+  }
+}
+
+sink {
+  StarRocks {
+    nodeUrls = ["e2e_starRocksdb:8030"]
+    base-url = "jdbc:mysql://e2e_starRocksdb:9030/"
+    username = root
+    password = ""
+    database = "test"
+    table = "user_table"
+    enable_2pc = true
+    enable_upsert_delete = true
+    starrocks.config = {
+      format = "JSON"
+      strip_outer_array = true
     }
   }
 }

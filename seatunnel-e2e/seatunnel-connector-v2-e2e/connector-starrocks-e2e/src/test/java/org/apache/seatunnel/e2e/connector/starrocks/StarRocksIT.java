@@ -409,6 +409,14 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
         }
     }
 
+    private void clearTable(String tableName) {
+        try (Statement statement = jdbcConnection.createStatement()) {
+            statement.execute(String.format("TRUNCATE TABLE %s.%s", DATABASE, tableName));
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to clear table: " + tableName, e);
+        }
+    }
+
     @Test
     public void testCatalog() {
         TablePath tablePathStarRocksSource = TablePath.of("test", "e2e_table_source");
@@ -497,5 +505,242 @@ public class StarRocksIT extends TestSuiteBase implements TestResource {
                 container.executeJob("/starrocks-to-assert-with-multipletable.conf");
         System.out.println(execResult.getExitCode());
         Assertions.assertEquals(0, execResult.getExitCode());
+    }
+
+    @TestTemplate
+    public void testStarRocks2PCDisabled(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult =
+                container.executeJob("/starrocks_source_and_sink_2pc_false.conf");
+        Assertions.assertEquals(0, execResult.getExitCode(), execResult.getStderr());
+
+        // Verify data was written correctly
+        try {
+            assertHasData("e2e_table_sink_2pc_false");
+
+            // Verify row count matches expected (100 rows from FakeSource)
+            String countSql =
+                    String.format(
+                            "select count(*) from %s.%s", DATABASE, "e2e_table_sink_2pc_false");
+            try (Statement statement = jdbcConnection.createStatement();
+                    ResultSet resultSet = statement.executeQuery(countSql)) {
+                Assertions.assertTrue(resultSet.next());
+                int rowCount = resultSet.getInt(1);
+                Assertions.assertEquals(100, rowCount, "Expected 100 rows in 2PC disabled test");
+            }
+
+            // Clean up
+            clearTable("e2e_table_sink_2pc_false");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to verify 2PC disabled test results", e);
+        }
+    }
+
+    @TestTemplate
+    public void testStarRocks2PCEnabled(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult =
+                container.executeJob("/starrocks_source_and_sink_2pc_true.conf");
+        Assertions.assertEquals(0, execResult.getExitCode(), execResult.getStderr());
+
+        // Verify data was written correctly with 2PC
+        try {
+            assertHasData("e2e_table_sink_2pc_true");
+
+            // Verify row count matches expected (100 rows from FakeSource)
+            String countSql =
+                    String.format(
+                            "select count(*) from %s.%s", DATABASE, "e2e_table_sink_2pc_true");
+            try (Statement statement = jdbcConnection.createStatement();
+                    ResultSet resultSet = statement.executeQuery(countSql)) {
+                Assertions.assertTrue(resultSet.next());
+                int rowCount = resultSet.getInt(1);
+                Assertions.assertEquals(100, rowCount, "Expected 100 rows in 2PC enabled test");
+            }
+
+            // Clean up
+            clearTable("e2e_table_sink_2pc_true");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to verify 2PC enabled test results", e);
+        }
+    }
+
+    @TestTemplate
+    public void testStarRocksMultiSource2PC(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult =
+                container.executeJob("/starrocks_multi_source_to_sink_2pc_true.conf");
+        Assertions.assertEquals(0, execResult.getExitCode(), execResult.getStderr());
+
+        // Verify data was written correctly to both tables
+        try {
+            assertHasData("e2e_table_sink_multi_1");
+            assertHasData("e2e_table_sink_multi_2");
+
+            // Verify row count for both tables (50 rows each from FakeSource)
+            String[] tables = {"e2e_table_sink_multi_1", "e2e_table_sink_multi_2"};
+            for (String table : tables) {
+                String countSql = String.format("select count(*) from %s.%s", DATABASE, table);
+                try (Statement statement = jdbcConnection.createStatement();
+                        ResultSet resultSet = statement.executeQuery(countSql)) {
+                    Assertions.assertTrue(resultSet.next());
+                    int rowCount = resultSet.getInt(1);
+                    Assertions.assertEquals(
+                            50,
+                            rowCount,
+                            "Expected 50 rows in multi-source 2PC test for table " + table);
+                }
+
+                // Clean up
+                clearTable(table);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to verify multi-source 2PC test results", e);
+        }
+    }
+
+    @TestTemplate
+    public void testStarRocksStreaming2PC(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult =
+                container.executeJob("/starrocks_streaming_2pc_true.conf");
+        Assertions.assertEquals(0, execResult.getExitCode(), execResult.getStderr());
+
+        // Verify data was written correctly in streaming mode with 2PC
+        try {
+            assertHasData("e2e_table_sink_streaming_2pc");
+
+            // In streaming mode, we expect data to be written incrementally
+            // Wait a bit for all data to be processed
+            Thread.sleep(2000);
+
+            // Verify we have data (exact count may vary due to streaming nature)
+            String countSql =
+                    String.format(
+                            "select count(*) from %s.%s", DATABASE, "e2e_table_sink_streaming_2pc");
+            try (Statement statement = jdbcConnection.createStatement();
+                    ResultSet resultSet = statement.executeQuery(countSql)) {
+                Assertions.assertTrue(resultSet.next());
+                int rowCount = resultSet.getInt(1);
+                Assertions.assertTrue(
+                        rowCount > 0, "Expected some rows in streaming 2PC test, got: " + rowCount);
+                log.info("Streaming 2PC test processed {} rows", rowCount);
+            }
+
+            // Clean up
+            clearTable("e2e_table_sink_streaming_2pc");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to verify streaming 2PC test results", e);
+        }
+    }
+
+    @TestTemplate
+    public void testStarRocksCSVFormat2PC(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult =
+                container.executeJob("/starrocks_csv_format_2pc_true.conf");
+        Assertions.assertEquals(0, execResult.getExitCode(), execResult.getStderr());
+
+        // Verify data was written correctly with CSV format and 2PC
+        try {
+            assertHasData("e2e_table_sink_csv_2pc");
+
+            // Verify row count matches expected (100 rows from FakeSource)
+            String countSql =
+                    String.format("select count(*) from %s.%s", DATABASE, "e2e_table_sink_csv_2pc");
+            try (Statement statement = jdbcConnection.createStatement();
+                    ResultSet resultSet = statement.executeQuery(countSql)) {
+                Assertions.assertTrue(resultSet.next());
+                int rowCount = resultSet.getInt(1);
+                Assertions.assertEquals(100, rowCount, "Expected 100 rows in CSV format 2PC test");
+            }
+
+            // Clean up
+            clearTable("e2e_table_sink_csv_2pc");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to verify CSV format 2PC test results", e);
+        }
+    }
+
+    @TestTemplate
+    public void testStarRocksHighPerformance2PC(TestContainer container)
+            throws IOException, InterruptedException {
+        Container.ExecResult execResult =
+                container.executeJob("/starrocks_high_performance_2pc_true.conf");
+        Assertions.assertEquals(0, execResult.getExitCode(), execResult.getStderr());
+
+        // Verify data was written correctly with high performance configuration and 2PC
+        try {
+            assertHasData("e2e_table_sink_high_perf_2pc");
+
+            // Verify row count matches expected (10000 rows from FakeSource)
+            String countSql =
+                    String.format(
+                            "select count(*) from %s.%s", DATABASE, "e2e_table_sink_high_perf_2pc");
+            try (Statement statement = jdbcConnection.createStatement();
+                    ResultSet resultSet = statement.executeQuery(countSql)) {
+                Assertions.assertTrue(resultSet.next());
+                int rowCount = resultSet.getInt(1);
+                Assertions.assertEquals(
+                        10000, rowCount, "Expected 10000 rows in high performance 2PC test");
+            }
+
+            // Clean up
+            clearTable("e2e_table_sink_high_perf_2pc");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to verify high performance 2PC test results", e);
+        }
+    }
+
+    /**
+     * Test 2PC functionality comparison - runs both disabled and enabled tests to verify that 2PC
+     * provides the same data consistency with transaction guarantees
+     */
+    @TestTemplate
+    public void testStarRocks2PCComparison(TestContainer container)
+            throws IOException, InterruptedException {
+        // First run without 2PC
+        Container.ExecResult execResult1 =
+                container.executeJob("/starrocks_source_and_sink_2pc_false.conf");
+        Assertions.assertEquals(0, execResult1.getExitCode(), execResult1.getStderr());
+
+        // Then run with 2PC
+        Container.ExecResult execResult2 =
+                container.executeJob("/starrocks_source_and_sink_2pc_true.conf");
+        Assertions.assertEquals(0, execResult2.getExitCode(), execResult2.getStderr());
+
+        // Verify both produced the same amount of data
+        try {
+            String countSql1 =
+                    String.format(
+                            "select count(*) from %s.%s", DATABASE, "e2e_table_sink_2pc_false");
+            String countSql2 =
+                    String.format(
+                            "select count(*) from %s.%s", DATABASE, "e2e_table_sink_2pc_true");
+
+            int count1, count2;
+            try (Statement statement = jdbcConnection.createStatement()) {
+                ResultSet rs1 = statement.executeQuery(countSql1);
+                rs1.next();
+                count1 = rs1.getInt(1);
+
+                ResultSet rs2 = statement.executeQuery(countSql2);
+                rs2.next();
+                count2 = rs2.getInt(1);
+            }
+
+            Assertions.assertEquals(
+                    count1, count2, "2PC enabled and disabled should produce the same row count");
+            Assertions.assertEquals(100, count1, "Expected 100 rows from FakeSource");
+
+            log.info("2PC comparison test: both modes processed {} rows successfully", count1);
+
+            // Clean up
+            clearTable("e2e_table_sink_2pc_false");
+            clearTable("e2e_table_sink_2pc_true");
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to verify 2PC comparison test results", e);
+        }
     }
 }
