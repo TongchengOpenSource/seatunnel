@@ -33,9 +33,7 @@ public class FlussUtil {
     private static final Pattern TABLE_NAME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_]*$");
     private static final Pattern DATABASE_NAME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_]*$");
 
-    /**
-     * Validate Fluss table name
-     */
+    /** Validate Fluss table name */
     public static void validateTableName(String tableName) {
         if (tableName == null || tableName.trim().isEmpty()) {
             throw new FlussConnectorException(
@@ -46,14 +44,13 @@ public class FlussUtil {
         if (!TABLE_NAME_PATTERN.matcher(tableName).matches()) {
             throw new FlussConnectorException(
                     FlussConnectorErrorCode.INVALID_CONFIGURATION,
-                    "Invalid table name: " + tableName + 
-                    ". Table name must start with a letter and contain only letters, numbers, and underscores");
+                    "Invalid table name: "
+                            + tableName
+                            + ". Table name must start with a letter and contain only letters, numbers, and underscores");
         }
     }
 
-    /**
-     * Validate Fluss database name
-     */
+    /** Validate Fluss database name */
     public static void validateDatabaseName(String databaseName) {
         if (databaseName == null || databaseName.trim().isEmpty()) {
             throw new FlussConnectorException(
@@ -64,14 +61,13 @@ public class FlussUtil {
         if (!DATABASE_NAME_PATTERN.matcher(databaseName).matches()) {
             throw new FlussConnectorException(
                     FlussConnectorErrorCode.INVALID_CONFIGURATION,
-                    "Invalid database name: " + databaseName + 
-                    ". Database name must start with a letter and contain only letters, numbers, and underscores");
+                    "Invalid database name: "
+                            + databaseName
+                            + ". Database name must start with a letter and contain only letters, numbers, and underscores");
         }
     }
 
-    /**
-     * Validate bootstrap servers format
-     */
+    /** Validate bootstrap servers format */
     public static void validateBootstrapServers(String bootstrapServers) {
         if (bootstrapServers == null || bootstrapServers.trim().isEmpty()) {
             throw new FlussConnectorException(
@@ -85,15 +81,14 @@ public class FlussUtil {
             if (!trimmedServer.contains(":")) {
                 throw new FlussConnectorException(
                         FlussConnectorErrorCode.INVALID_CONFIGURATION,
-                        "Invalid bootstrap server format: " + trimmedServer + 
-                        ". Expected format: host:port");
+                        "Invalid bootstrap server format: "
+                                + trimmedServer
+                                + ". Expected format: host:port");
             }
         }
     }
 
-    /**
-     * Convert map to Properties
-     */
+    /** Convert map to Properties */
     public static Properties mapToProperties(Map<String, String> map) {
         Properties properties = new Properties();
         if (map != null) {
@@ -102,9 +97,7 @@ public class FlussUtil {
         return properties;
     }
 
-    /**
-     * Convert map to Properties with Object values
-     */
+    /** Convert map to Properties with Object values */
     public static Properties mapToPropertiesWithObjects(Map<String, Object> map) {
         Properties properties = new Properties();
         if (map != null) {
@@ -115,25 +108,19 @@ public class FlussUtil {
         return properties;
     }
 
-    /**
-     * Create full table name
-     */
+    /** Create full table name */
     public static String createFullTableName(String database, String table) {
         validateDatabaseName(database);
         validateTableName(table);
         return database + "." + table;
     }
 
-    /**
-     * Parse startup mode
-     */
+    /** Parse startup mode */
     public static StartupMode parseStartupMode(String mode) {
         return StartupMode.fromValue(mode);
     }
 
-    /**
-     * Parse write mode
-     */
+    /** Parse write mode */
     public static WriteMode parseWriteMode(String mode) {
         if (mode == null) {
             return WriteMode.APPEND;
@@ -144,52 +131,44 @@ public class FlussUtil {
         } catch (IllegalArgumentException e) {
             throw new FlussConnectorException(
                     FlussConnectorErrorCode.INVALID_CONFIGURATION,
-                    "Invalid write mode: " + mode + 
-                    ". Valid modes are: append, upsert");
+                    "Invalid write mode: " + mode + ". Valid modes are: append, upsert");
         }
     }
 
-
-
-    /**
-     * Write mode enumeration
-     */
+    /** Write mode enumeration */
     public enum WriteMode {
         APPEND,
         UPSERT
     }
 
-    /**
-     * Retry with exponential backoff
-     */
+    /** Retry with exponential backoff */
     public static void retryWithBackoff(Runnable operation, int maxRetries, long initialDelayMs) {
         Exception lastException = null;
-        
+
         for (int attempt = 0; attempt <= maxRetries; attempt++) {
             try {
                 operation.run();
                 return; // Success
             } catch (Exception e) {
                 lastException = e;
-                
+
                 if (attempt == maxRetries) {
                     break; // Last attempt failed
                 }
-                
+
                 long delay = initialDelayMs * (1L << attempt); // Exponential backoff
                 log.warn("Operation failed on attempt {}, retrying in {}ms", attempt + 1, delay, e);
-                
+
                 try {
                     Thread.sleep(delay);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     throw new FlussConnectorException(
-                            FlussConnectorErrorCode.INTERNAL_ERROR,
-                            "Interrupted during retry", ie);
+                            FlussConnectorErrorCode.INTERNAL_ERROR, "Interrupted during retry", ie);
                 }
             }
         }
-        
+
         throw new FlussConnectorException(
                 FlussConnectorErrorCode.INTERNAL_ERROR,
                 "Operation failed after " + (maxRetries + 1) + " attempts",

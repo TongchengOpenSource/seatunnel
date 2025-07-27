@@ -34,7 +34,8 @@ public enum FlussConnectorErrorCode implements SeaTunnelErrorCode {
     AUTHORIZATION_FAILED("FLUSS-12", "Authorization failed"),
     UNSUPPORTED_OPERATION("FLUSS-13", "Unsupported operation"),
     RESOURCE_NOT_AVAILABLE("FLUSS-14", "Resource not available"),
-    INTERNAL_ERROR("FLUSS-15", "Internal Fluss connector error");
+    GET_OFFSETS_FAILED("FLUSS-15", "Failed to retrieve offsets from Fluss"),
+    INTERNAL_ERROR("FLUSS-16", "Internal Fluss connector error");
 
     private final String code;
     private final String description;

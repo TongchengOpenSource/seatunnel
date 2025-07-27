@@ -18,9 +18,7 @@
 package org.apache.seatunnel.connectors.seatunnel.fluss.util;
 
 import org.apache.seatunnel.api.table.type.ArrayType;
-import org.apache.seatunnel.api.table.type.BasicType;
 import org.apache.seatunnel.api.table.type.DecimalType;
-import org.apache.seatunnel.api.table.type.LocalTimeType;
 import org.apache.seatunnel.api.table.type.MapType;
 import org.apache.seatunnel.api.table.type.SeaTunnelDataType;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
@@ -33,7 +31,6 @@ import com.alibaba.fluss.row.InternalRow;
 import com.alibaba.fluss.utils.types.BinaryString;
 import com.alibaba.fluss.utils.types.Decimal;
 import com.alibaba.fluss.utils.types.TimestampNtz;
-
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -46,10 +43,9 @@ import java.util.Map;
 @Slf4j
 public class FlussTypeConverter {
 
-    /**
-     * Convert SeaTunnelRow to Fluss GenericRow
-     */
-    public static GenericRow convertToFlussRow(SeaTunnelRow seaTunnelRow, SeaTunnelRowType rowType) {
+    /** Convert SeaTunnelRow to Fluss GenericRow */
+    public static GenericRow convertToFlussRow(
+            SeaTunnelRow seaTunnelRow, SeaTunnelRowType rowType) {
         if (seaTunnelRow == null) {
             return null;
         }
@@ -63,9 +59,7 @@ public class FlussTypeConverter {
         return flussRow;
     }
 
-    /**
-     * Convert Fluss InternalRow to SeaTunnelRow
-     */
+    /** Convert Fluss InternalRow to SeaTunnelRow */
     public static SeaTunnelRow convertFromFlussRow(InternalRow flussRow, SeaTunnelRowType rowType) {
         if (flussRow == null) {
             return null;
@@ -73,15 +67,16 @@ public class FlussTypeConverter {
 
         Object[] values = new Object[rowType.getTotalFields()];
         for (int i = 0; i < rowType.getTotalFields(); i++) {
-            Object value = flussRow.isNullAt(i) ? null : getFieldValue(flussRow, i, rowType.getFieldType(i));
+            Object value =
+                    flussRow.isNullAt(i)
+                            ? null
+                            : getFieldValue(flussRow, i, rowType.getFieldType(i));
             values[i] = convertFromFlussType(rowType.getFieldType(i), value);
         }
         return new SeaTunnelRow(values);
     }
 
-    /**
-     * Convert SeaTunnel data type to Fluss data type
-     */
+    /** Convert SeaTunnel data type to Fluss data type */
     public static Object convertToFlussType(SeaTunnelDataType<?> seaTunnelType, Object value) {
         if (value == null) {
             return null;
@@ -128,7 +123,8 @@ public class FlussTypeConverter {
                 case MAP:
                     return convertMapToFluss((MapType<?, ?>) seaTunnelType, value);
                 case ROW:
-                    return convertRowToFluss((SeaTunnelRowType) seaTunnelType, (SeaTunnelRow) value);
+                    return convertRowToFluss(
+                            (SeaTunnelRowType) seaTunnelType, (SeaTunnelRow) value);
                 default:
                     throw new FlussConnectorException(
                             FlussConnectorErrorCode.UNSUPPORTED_OPERATION,
@@ -144,10 +140,9 @@ public class FlussTypeConverter {
         return value;
     }
 
-    /**
-     * Convert Fluss data type to SeaTunnel data type
-     */
-    public static Object convertFromFlussType(SeaTunnelDataType<?> seaTunnelType, Object flussValue) {
+    /** Convert Fluss data type to SeaTunnel data type */
+    public static Object convertFromFlussType(
+            SeaTunnelDataType<?> seaTunnelType, Object flussValue) {
         if (flussValue == null) {
             return null;
         }
@@ -175,7 +170,8 @@ public class FlussTypeConverter {
                     return flussValue;
                 case TIME:
                     if (flussValue instanceof Long) {
-                        return LocalTime.ofNanoOfDay((Long) flussValue * 1000); // Convert from microseconds
+                        return LocalTime.ofNanoOfDay(
+                                (Long) flussValue * 1000); // Convert from microseconds
                     }
                     return flussValue;
                 case TIMESTAMP:
@@ -243,7 +239,8 @@ public class FlussTypeConverter {
             Map<Object, Object> converted = new HashMap<>();
             for (Map.Entry<?, ?> entry : map.entrySet()) {
                 Object convertedKey = convertToFlussType(mapType.getKeyType(), entry.getKey());
-                Object convertedValue = convertToFlussType(mapType.getValueType(), entry.getValue());
+                Object convertedValue =
+                        convertToFlussType(mapType.getValueType(), entry.getValue());
                 converted.put(convertedKey, convertedValue);
             }
             return converted;
@@ -258,7 +255,8 @@ public class FlussTypeConverter {
             Map<Object, Object> converted = new HashMap<>();
             for (Map.Entry<?, ?> entry : map.entrySet()) {
                 Object convertedKey = convertFromFlussType(mapType.getKeyType(), entry.getKey());
-                Object convertedValue = convertFromFlussType(mapType.getValueType(), entry.getValue());
+                Object convertedValue =
+                        convertFromFlussType(mapType.getValueType(), entry.getValue());
                 converted.put(convertedKey, convertedValue);
             }
             return converted;
@@ -286,14 +284,12 @@ public class FlussTypeConverter {
             return new SeaTunnelRow(converted);
         }
         throw new FlussConnectorException(
-                FlussConnectorErrorCode.SERIALIZATION_FAILED,
-                "Invalid Fluss row format");
+                FlussConnectorErrorCode.SERIALIZATION_FAILED, "Invalid Fluss row format");
     }
 
-    /**
-     * Get field value from Fluss InternalRow based on field type
-     */
-    private static Object getFieldValue(InternalRow row, int index, SeaTunnelDataType<?> fieldType) {
+    /** Get field value from Fluss InternalRow based on field type */
+    private static Object getFieldValue(
+            InternalRow row, int index, SeaTunnelDataType<?> fieldType) {
         switch (fieldType.getSqlType()) {
             case BOOLEAN:
                 return row.getBoolean(index);

@@ -46,7 +46,7 @@ public class FlussSourceSplit implements SourceSplit, Serializable {
         this.table = table;
         this.bucketId = bucketId;
         this.startOffset = -1L; // Start from beginning
-        this.endOffset = -1L;   // Read to end
+        this.endOffset = -1L; // Read to end
         this.isFinished = false;
     }
 
@@ -69,14 +69,24 @@ public class FlussSourceSplit implements SourceSplit, Serializable {
 
     @Override
     public String toString() {
-        return "FlussSourceSplit{" +
-                "splitId='" + splitId + '\'' +
-                ", database='" + database + '\'' +
-                ", table='" + table + '\'' +
-                ", bucketId=" + bucketId +
-                ", startOffset=" + startOffset +
-                ", endOffset=" + endOffset +
-                ", isFinished=" + isFinished +
-                '}';
+        return "FlussSourceSplit{"
+                + "splitId='"
+                + splitId
+                + '\''
+                + ", database='"
+                + database
+                + '\''
+                + ", table='"
+                + table
+                + '\''
+                + ", bucketId="
+                + bucketId
+                + ", startOffset="
+                + startOffset
+                + ", endOffset="
+                + endOffset
+                + ", isFinished="
+                + isFinished
+                + '}';
     }
 }

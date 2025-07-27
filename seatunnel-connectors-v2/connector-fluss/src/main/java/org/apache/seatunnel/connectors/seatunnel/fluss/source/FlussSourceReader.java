@@ -17,30 +17,28 @@
 
 package org.apache.seatunnel.connectors.seatunnel.fluss.source;
 
-import com.alibaba.fluss.client.admin.Admin;
-import com.alibaba.fluss.client.admin.OffsetSpec;
-import com.alibaba.fluss.client.table.scanner.ScanRecord;
-import com.alibaba.fluss.client.table.scanner.log.LogScanner;
-import com.alibaba.fluss.client.table.scanner.log.ScanRecords;
 import org.apache.seatunnel.api.source.Boundedness;
 import org.apache.seatunnel.api.source.Collector;
 import org.apache.seatunnel.api.source.SourceReader;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
+import org.apache.seatunnel.connectors.seatunnel.fluss.client.FlussConnectionManager;
 import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSourceConfig;
 import org.apache.seatunnel.connectors.seatunnel.fluss.config.StartupMode;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorException;
-import org.apache.seatunnel.connectors.seatunnel.fluss.client.FlussConnectionManager;
 import org.apache.seatunnel.connectors.seatunnel.fluss.util.FlussTypeConverter;
 
-
+import com.alibaba.fluss.client.admin.Admin;
 import com.alibaba.fluss.client.admin.ListOffsetsResult;
+import com.alibaba.fluss.client.admin.OffsetSpec;
 import com.alibaba.fluss.client.table.Table;
+import com.alibaba.fluss.client.table.scanner.ScanRecord;
+import com.alibaba.fluss.client.table.scanner.log.LogScanner;
+import com.alibaba.fluss.client.table.scanner.log.ScanRecords;
 import com.alibaba.fluss.metadata.TableBucket;
 import com.alibaba.fluss.metadata.TablePath;
 import com.alibaba.fluss.row.InternalRow;
-
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -118,11 +116,13 @@ public class FlussSourceReader implements SourceReader<SeaTunnelRow, FlussSource
         }
 
         try {
-            ScanRecords scanRecords = logScanner.poll(Duration.ofMillis(sourceConfig.getPollTimeoutMs()));
+            ScanRecords scanRecords =
+                    logScanner.poll(Duration.ofMillis(sourceConfig.getPollTimeoutMs()));
 
             if (scanRecords.isEmpty()) {
                 if (context.getBoundedness() == Boundedness.BOUNDED) {
-                    boolean allFinished = pendingSplits.stream().allMatch(FlussSourceSplit::isFinished);
+                    boolean allFinished =
+                            pendingSplits.stream().allMatch(FlussSourceSplit::isFinished);
                     if (allFinished) {
                         context.signalNoMoreElement();
                     }
@@ -133,7 +133,8 @@ public class FlussSourceReader implements SourceReader<SeaTunnelRow, FlussSource
             for (TableBucket bucket : scanRecords.buckets()) {
                 for (ScanRecord record : scanRecords.records(bucket)) {
                     InternalRow flussRow = record.getRow();
-                    SeaTunnelRow seaTunnelRow = FlussTypeConverter.convertFromFlussRow(flussRow, rowType);
+                    SeaTunnelRow seaTunnelRow =
+                            FlussTypeConverter.convertFromFlussRow(flussRow, rowType);
                     output.collect(seaTunnelRow);
                 }
             }
@@ -142,9 +143,7 @@ public class FlussSourceReader implements SourceReader<SeaTunnelRow, FlussSource
 
         } catch (Exception e) {
             throw new FlussConnectorException(
-                    FlussConnectorErrorCode.READ_DATA_FAILED,
-                    "Failed to read data from Fluss",
-                    e);
+                    FlussConnectorErrorCode.READ_DATA_FAILED, "Failed to read data from Fluss", e);
         }
     }
 
@@ -159,7 +158,6 @@ public class FlussSourceReader implements SourceReader<SeaTunnelRow, FlussSource
         pendingSplits.addAll(splits);
         assignedSplits.addAll(splits);
 
-        // Subscribe to buckets in the log scanner with appropriate offsets
         if (logScanner != null) {
             subscribeToSplitsWithOffsets(splits);
         }
@@ -178,19 +176,21 @@ public class FlussSourceReader implements SourceReader<SeaTunnelRow, FlussSource
     }
 
     private void initializeFlussClient() throws Exception {
-        log.info("Initializing Fluss client with bootstrap servers: {}",
+        log.info(
+                "Initializing Fluss client with bootstrap servers: {}",
                 sourceConfig.getBootstrapServers());
 
         connectionManager = new FlussConnectionManager(sourceConfig.toFlussProperties());
-        flussTable = connectionManager.getTable(sourceConfig.getDatabase(), sourceConfig.getTable());
+        flussTable =
+                connectionManager.getTable(sourceConfig.getDatabase(), sourceConfig.getTable());
         logScanner = flussTable.newScan().createLogScanner();
 
-        log.info("Successfully initialized Fluss client for table {}", sourceConfig.getFullTableName());
+        log.info(
+                "Successfully initialized Fluss client for table {}",
+                sourceConfig.getFullTableName());
     }
 
-    /**
-     * Subscribe to splits with appropriate offsets based on startup mode
-     */
+
     private void subscribeToSplitsWithOffsets(List<FlussSourceSplit> splits) {
         try {
             StartupMode startupMode = sourceConfig.getScanStartupMode();
@@ -204,106 +204,91 @@ public class FlussSourceReader implements SourceReader<SeaTunnelRow, FlussSource
                     break;
                 case TIMESTAMP:
                     if (sourceConfig.getScanStartupTimestamp() != null) {
-                        subscribeFromTimestampOffsets(splits, sourceConfig.getScanStartupTimestamp());
+                        subscribeFromTimestampOffsets(
+                                splits, sourceConfig.getScanStartupTimestamp());
                     } else {
                         throw new FlussConnectorException(
                                 FlussConnectorErrorCode.INVALID_CONFIGURATION,
-                                "Timestamp startup mode specified but scan.startup.timestamp is not provided. " +
-                                        "Please provide a valid timestamp value when using timestamp startup mode.");
+                                "Timestamp startup mode specified but scan.startup.timestamp is not provided. "
+                                        + "Please provide a valid timestamp value when using timestamp startup mode.");
                     }
                     break;
                 default:
-                    log.warn("Unknown startup mode: {}, using earliest mode", startupMode);
-                    subscribeFromEarliestOffsets(splits);
-                    break;
+                    throw new FlussConnectorException(
+                            FlussConnectorErrorCode.INVALID_CONFIGURATION,
+                            "Unsupported startup mode: " + startupMode);
             }
         } catch (Exception e) {
             log.error("Failed to subscribe to splits with offsets", e);
-            throw new FlussConnectorException(
-                    FlussConnectorErrorCode.READ_DATA_FAILED, e);
+            throw new FlussConnectorException(FlussConnectorErrorCode.READ_DATA_FAILED, e);
         }
     }
 
-    /**
-     * Subscribe from earliest offsets using subscribeFromBeginning
-     */
     private void subscribeFromEarliestOffsets(List<FlussSourceSplit> splits) throws Exception {
         for (FlussSourceSplit split : splits) {
             logScanner.subscribeFromBeginning(split.getBucketId());
-            log.debug("Subscribed to bucket {} for split {} from beginning",
-                    split.getBucketId(), split.splitId());
+            log.info(
+                    "Subscribed to bucket {} for split {} from beginning",
+                    split.getBucketId(),
+                    split.splitId());
         }
     }
 
-
-    /**
-     * Subscribe from latest offsets using Admin listOffsets
-     */
     private void subscribeFromLatestOffsets(List<FlussSourceSplit> splits) throws Exception {
         Admin admin = connectionManager.getAdmin();
 
-        List<Integer> buckets = splits.stream()
-                .map(FlussSourceSplit::getBucketId)
-                .collect(Collectors.toList());
+        List<Integer> buckets =
+                splits.stream().map(FlussSourceSplit::getBucketId).collect(Collectors.toList());
 
         try {
-            ListOffsetsResult result = admin.listOffsets(tablePath, buckets, new OffsetSpec.LatestSpec());
+            ListOffsetsResult result =
+                    admin.listOffsets(tablePath, buckets, new OffsetSpec.LatestSpec());
             Map<Integer, Long> latestOffsets = result.all().get();
             for (FlussSourceSplit split : splits) {
                 Long latestOffset = latestOffsets.get(split.getBucketId());
 
                 if (latestOffset != null) {
                     logScanner.subscribe(split.getBucketId(), latestOffset);
-                    log.debug("Subscribed to bucket {} for split {} from latest offset {}",
-                            split.getBucketId(), split.splitId(), latestOffset);
-                } else {
-                    logScanner.subscribeFromBeginning(split.getBucketId());
-                    log.warn("Latest offset not found for bucket {}, using earliest mode", split.getBucketId());
+                    log.info(
+                            "Subscribed to bucket {} for split {} from latest offset {}",
+                            split.getBucketId(),
+                            split.splitId(),
+                            latestOffset);
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to get latest offsets from Admin, falling back to earliest mode", e);
-            // Fallback to earliest mode for all splits
-            for (FlussSourceSplit split : splits) {
-                logScanner.subscribeFromBeginning(split.getBucketId());
-            }
+            throw new FlussConnectorException(FlussConnectorErrorCode.READ_DATA_FAILED, e);
         }
     }
 
-    /**
-     * Subscribe from timestamp offsets using Admin listOffsets
-     */
-    private void subscribeFromTimestampOffsets(List<FlussSourceSplit> splits, long timestamp) throws Exception {
+    private void subscribeFromTimestampOffsets(List<FlussSourceSplit> splits, long timestamp)
+            throws Exception {
         Admin admin = connectionManager.getAdmin();
-        List<Integer> buckets = splits.stream()
-                .map(FlussSourceSplit::getBucketId)
-                .collect(Collectors.toList());
+        List<Integer> buckets =
+                splits.stream().map(FlussSourceSplit::getBucketId).collect(Collectors.toList());
 
         try {
-            ListOffsetsResult result = admin.listOffsets(tablePath, buckets, new OffsetSpec.TimestampSpec(timestamp));
+            ListOffsetsResult result =
+                    admin.listOffsets(tablePath, buckets, new OffsetSpec.TimestampSpec(timestamp));
             Map<Integer, Long> timestampOffsets = result.all().get();
 
-            // Subscribe with timestamp offsets
             for (FlussSourceSplit split : splits) {
                 Long timestampOffset = timestampOffsets.get(split.getBucketId());
 
                 if (timestampOffset != null) {
                     logScanner.subscribe(split.getBucketId(), timestampOffset);
-                    log.debug("Subscribed to bucket {} for split {} from timestamp {} with offset {}",
-                            split.getBucketId(), split.splitId(), timestamp, timestampOffset);
-                } else {
-                    // Fallback to subscribeFromBeginning if offset not found
-                    logScanner.subscribeFromBeginning(split.getBucketId());
-                    log.warn("Timestamp offset not found for bucket {} at timestamp {}, using earliest mode",
-                            split.getBucketId(), timestamp);
+                    log.debug(
+                            "Subscribed to bucket {} for split {} from timestamp {} with offset {}",
+                            split.getBucketId(),
+                            split.splitId(),
+                            timestamp,
+                            timestampOffset);
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to get timestamp offsets from Admin, falling back to earliest mode", e);
-            // Fallback to earliest mode for all splits
-            for (FlussSourceSplit split : splits) {
-                logScanner.subscribeFromBeginning(split.getBucketId());
-            }
+            log.error(
+                    "Failed to get timestamp offsets from Admin, falling back to earliest mode", e);
+            throw new FlussConnectorException(FlussConnectorErrorCode.READ_DATA_FAILED, e);
         }
     }
 }

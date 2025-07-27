@@ -18,7 +18,6 @@
 package org.apache.seatunnel.connectors.seatunnel.fluss.source;
 
 import org.apache.seatunnel.api.common.JobContext;
-import org.apache.seatunnel.common.constants.JobMode;
 import org.apache.seatunnel.api.configuration.ReadonlyConfig;
 import org.apache.seatunnel.api.source.Boundedness;
 import org.apache.seatunnel.api.source.SeaTunnelSource;
@@ -27,8 +26,9 @@ import org.apache.seatunnel.api.source.SourceSplitEnumerator;
 import org.apache.seatunnel.api.source.SupportParallelism;
 import org.apache.seatunnel.api.table.catalog.CatalogTable;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
-import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSourceConfig;
+import org.apache.seatunnel.common.constants.JobMode;
 import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussOptions;
+import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSourceConfig;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,7 +36,9 @@ import java.util.Collections;
 import java.util.List;
 
 @Slf4j
-public class FlussSource implements SeaTunnelSource<SeaTunnelRow, FlussSourceSplit, FlussSourceState>, SupportParallelism {
+public class FlussSource
+        implements SeaTunnelSource<SeaTunnelRow, FlussSourceSplit, FlussSourceState>,
+                SupportParallelism {
 
     private final FlussSourceConfig sourceConfig;
     private final CatalogTable catalogTable;
@@ -63,12 +65,10 @@ public class FlussSource implements SeaTunnelSource<SeaTunnelRow, FlussSourceSpl
         if (jobContext != null && JobMode.BATCH.equals(jobContext.getJobMode())) {
             return Boundedness.BOUNDED;
         }
-        
-        // For streaming mode, check if changelog is enabled
         if (sourceConfig.getEnableChangelog()) {
             return Boundedness.UNBOUNDED;
         }
-        
+
         return Boundedness.BOUNDED;
     }
 
@@ -78,8 +78,10 @@ public class FlussSource implements SeaTunnelSource<SeaTunnelRow, FlussSourceSpl
     }
 
     @Override
-    public SourceReader<SeaTunnelRow, FlussSourceSplit> createReader(SourceReader.Context readerContext) throws Exception {
-        return new FlussSourceReader(readerContext, sourceConfig, catalogTable.getSeaTunnelRowType());
+    public SourceReader<SeaTunnelRow, FlussSourceSplit> createReader(
+            SourceReader.Context readerContext) throws Exception {
+        return new FlussSourceReader(
+                readerContext, sourceConfig, catalogTable.getSeaTunnelRowType());
     }
 
     @Override
@@ -91,7 +93,8 @@ public class FlussSource implements SeaTunnelSource<SeaTunnelRow, FlussSourceSpl
     @Override
     public SourceSplitEnumerator<FlussSourceSplit, FlussSourceState> restoreEnumerator(
             SourceSplitEnumerator.Context<FlussSourceSplit> enumeratorContext,
-            FlussSourceState checkpointState) throws Exception {
+            FlussSourceState checkpointState)
+            throws Exception {
         return new FlussSourceSplitEnumerator(enumeratorContext, sourceConfig, checkpointState);
     }
 }

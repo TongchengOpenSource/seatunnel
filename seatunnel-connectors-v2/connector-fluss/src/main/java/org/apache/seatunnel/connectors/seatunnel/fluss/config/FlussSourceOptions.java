@@ -20,47 +20,38 @@ package org.apache.seatunnel.connectors.seatunnel.fluss.config;
 import org.apache.seatunnel.api.configuration.Option;
 import org.apache.seatunnel.api.configuration.Options;
 
+/**
+ * Source-specific options for Fluss connector, following the official Fluss design pattern.
+ *
+ * <p>This class only defines source-specific options that are not covered by the core
+ * Fluss configuration. Performance and client-related options should be configured
+ * through the fluss.config map.
+ */
 public class FlussSourceOptions extends FlussOptions {
 
-    public static final Option<String> SCAN_STARTUP_MODE =
+    // ----------------------------------------------------------------------------------------
+    // Scan startup options
+    // ----------------------------------------------------------------------------------------
+
+    public static final Option<StartupMode> SCAN_STARTUP_MODE =
             Options.key("scan.startup.mode")
-                    .stringType()
-                    .defaultValue("earliest")
-                    .withDescription("Startup mode for Fluss source: earliest, latest, timestamp");
+                    .enumType(StartupMode.class)
+                    .defaultValue(StartupMode.FULL)
+                    .withDescription(
+                            "Optional startup mode for Fluss source. Default is 'full'. "
+                                    + "Options: "
+                                    + "'full' - performs a full snapshot on the table upon first startup, "
+                                    + "and continue to read the latest changelog with exactly once guarantee; "
+                                    + "'earliest' - start reading logs from the earliest offset; "
+                                    + "'latest' - start reading logs from the latest offset; "
+                                    + "'timestamp' - start reading logs from user-supplied timestamp.");
 
-    public static final Option<Long> SCAN_STARTUP_TIMESTAMP =
+    public static final Option<String> SCAN_STARTUP_TIMESTAMP =
             Options.key("scan.startup.timestamp")
-                    .longType()
-                    .noDefaultValue()
-                    .withDescription("Startup timestamp for timestamp mode (milliseconds since epoch)");
-
-    public static final Option<Integer> SCAN_PARALLELISM =
-            Options.key("scan.parallelism")
-                    .intType()
-                    .defaultValue(1)
-                    .withDescription("Parallelism for scanning Fluss table");
-
-    public static final Option<Integer> FETCH_SIZE =
-            Options.key("fetch.size")
-                    .intType()
-                    .defaultValue(1000)
-                    .withDescription("Number of records to fetch in each batch");
-
-    public static final Option<Long> POLL_TIMEOUT_MS =
-            Options.key("poll.timeout.ms")
-                    .longType()
-                    .defaultValue(5000L)
-                    .withDescription("Timeout for polling records in milliseconds");
-
-    public static final Option<Boolean> ENABLE_CHANGELOG =
-            Options.key("enable.changelog")
-                    .booleanType()
-                    .defaultValue(false)
-                    .withDescription("Whether to enable changelog mode for streaming reads");
-
-    public static final Option<String> CONSUMER_GROUP =
-            Options.key("consumer.group")
                     .stringType()
                     .noDefaultValue()
-                    .withDescription("Consumer group ID for Fluss source");
+                    .withDescription(
+                            "Optional timestamp for Fluss source in case of startup mode is timestamp. "
+                                    + "The format is 'timestamp' or 'yyyy-MM-dd HH:mm:ss'. "
+                                    + "Like '1678883047356' or '2023-12-09 23:09:12'.");
 }

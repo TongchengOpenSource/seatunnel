@@ -23,14 +23,10 @@ import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.api.table.factory.TableSinkFactory;
 import org.apache.seatunnel.api.table.factory.TableSinkFactoryContext;
 import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSinkConfig;
-import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSinkOptions;
 
 import com.google.auto.service.AutoService;
 
-import static org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSinkOptions.*;
-
-@AutoService(Factory.class)
-public class FlussSinkFactory implements TableSinkFactory {
+static @AutoService(Factory.class) public class FlussSinkFactory implements TableSinkFactory {
 
     @Override
     public String factoryIdentifier() {
@@ -54,8 +50,7 @@ public class FlussSinkFactory implements TableSinkFactory {
                         REQUEST_TIMEOUT_MS,
                         RETRY_TIMES,
                         RETRY_INTERVAL_MS,
-                        FLUSS_CONFIG
-                )
+                        FLUSS_CONFIG)
                 .build();
     }
 

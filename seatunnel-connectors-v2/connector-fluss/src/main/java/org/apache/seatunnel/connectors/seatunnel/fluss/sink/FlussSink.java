@@ -23,8 +23,8 @@ import org.apache.seatunnel.api.sink.SinkWriter;
 import org.apache.seatunnel.api.table.catalog.CatalogTable;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
-import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussOptions;
+import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSinkConfig;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,7 +34,9 @@ import java.util.List;
 import java.util.Optional;
 
 @Slf4j
-public class FlussSink implements SeaTunnelSink<SeaTunnelRow, FlussSinkState, FlussCommitInfo, FlussAggregatedCommitInfo> {
+public class FlussSink
+        implements SeaTunnelSink<
+                SeaTunnelRow, FlussSinkState, FlussCommitInfo, FlussAggregatedCommitInfo> {
 
     private final FlussSinkConfig sinkConfig;
     private final SeaTunnelRowType rowType;
@@ -52,8 +54,8 @@ public class FlussSink implements SeaTunnelSink<SeaTunnelRow, FlussSinkState, Fl
     }
 
     @Override
-    public SinkWriter<SeaTunnelRow, FlussCommitInfo, FlussSinkState> createWriter(SinkWriter.Context context)
-            throws IOException {
+    public SinkWriter<SeaTunnelRow, FlussCommitInfo, FlussSinkState> createWriter(
+            SinkWriter.Context context) throws IOException {
         return new FlussSinkWriter(context, sinkConfig, rowType, Collections.emptyList());
     }
 
@@ -64,8 +66,8 @@ public class FlussSink implements SeaTunnelSink<SeaTunnelRow, FlussSinkState, Fl
     }
 
     @Override
-    public Optional<SinkAggregatedCommitter<FlussCommitInfo, FlussAggregatedCommitInfo>> createAggregatedCommitter()
-            throws IOException {
+    public Optional<SinkAggregatedCommitter<FlussCommitInfo, FlussAggregatedCommitInfo>>
+            createAggregatedCommitter() throws IOException {
         if (sinkConfig.getEnableTransaction()) {
             return Optional.of(new FlussAggregatedCommitter(sinkConfig));
         }

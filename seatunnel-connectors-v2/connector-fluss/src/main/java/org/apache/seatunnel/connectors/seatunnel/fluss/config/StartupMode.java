@@ -17,25 +17,24 @@
 
 package org.apache.seatunnel.connectors.seatunnel.fluss.config;
 
-/**
- * Startup mode for Fluss source connector
- */
+/** Startup mode for Fluss source connector */
 public enum StartupMode {
 
-    /**
-     * Start reading from the earliest available offset in the log
-     */
+    /** Start reading from the earliest available offset in the log */
     EARLIEST("earliest"),
 
-    /**
-     * Start reading from the latest available offset in the log
-     */
+    /** Start reading from the latest available offset in the log */
     LATEST("latest"),
 
+    /** Start reading from a specific timestamp */
+    TIMESTAMP("timestamp"),
+
     /**
-     * Start reading from a specific timestamp
+     * Perform a full snapshot on the table upon first startup, and continue to read the changelog.
+     * For log tables: equivalent to EARLIEST, reading from the earliest offset.
+     * For primary key tables: reads the latest snapshot which materializes all changes on the table.
      */
-    TIMESTAMP("timestamp");
+    FULL("full");
 
     private final String value;
 
@@ -47,9 +46,7 @@ public enum StartupMode {
         return value;
     }
 
-    /**
-     * Parse startup mode from string value
-     */
+    /** Parse startup mode from string value */
     public static StartupMode fromValue(String value) {
         if (value == null) {
             return EARLIEST;

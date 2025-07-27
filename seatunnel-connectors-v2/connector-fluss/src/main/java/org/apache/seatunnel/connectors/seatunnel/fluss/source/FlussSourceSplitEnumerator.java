@@ -33,7 +33,8 @@ import java.util.Map;
 import java.util.Set;
 
 @Slf4j
-public class FlussSourceSplitEnumerator implements SourceSplitEnumerator<FlussSourceSplit, FlussSourceState> {
+public class FlussSourceSplitEnumerator
+        implements SourceSplitEnumerator<FlussSourceSplit, FlussSourceState> {
 
     private final SourceSplitEnumerator.Context<FlussSourceSplit> context;
     private final FlussSourceConfig sourceConfig;
@@ -124,23 +125,24 @@ public class FlussSourceSplitEnumerator implements SourceSplitEnumerator<FlussSo
         // For now, create splits based on parallelism
         // In a real implementation, this would query Fluss to get actual bucket information
         int parallelism = sourceConfig.getScanParallelism();
-        
+
         for (int i = 0; i < parallelism; i++) {
-            String splitId = String.format("%s-%s-bucket-%d", 
-                    sourceConfig.getDatabase(), 
-                    sourceConfig.getTable(), 
-                    i);
-            
-            FlussSourceSplit split = new FlussSourceSplit(
-                    splitId,
-                    sourceConfig.getDatabase(),
-                    sourceConfig.getTable(),
-                    i);
-            
+            String splitId =
+                    String.format(
+                            "%s-%s-bucket-%d",
+                            sourceConfig.getDatabase(), sourceConfig.getTable(), i);
+
+            FlussSourceSplit split =
+                    new FlussSourceSplit(
+                            splitId, sourceConfig.getDatabase(), sourceConfig.getTable(), i);
+
             pendingSplits.add(split);
         }
-        
-        log.info("Discovered {} splits for table {}", pendingSplits.size(), sourceConfig.getFullTableName());
+
+        log.info(
+                "Discovered {} splits for table {}",
+                pendingSplits.size(),
+                sourceConfig.getFullTableName());
     }
 
     private void assignSplits() {
@@ -149,7 +151,7 @@ public class FlussSourceSplitEnumerator implements SourceSplitEnumerator<FlussSo
         }
 
         Map<Integer, List<FlussSourceSplit>> assignment = new HashMap<>();
-        
+
         for (int readerId : context.registeredReaders()) {
             assignment.put(readerId, new ArrayList<>());
         }
@@ -158,7 +160,7 @@ public class FlussSourceSplitEnumerator implements SourceSplitEnumerator<FlussSo
         List<FlussSourceSplit> splitsToAssign = new ArrayList<>(pendingSplits);
         int readerIndex = 0;
         List<Integer> readers = new ArrayList<>(context.registeredReaders());
-        
+
         for (FlussSourceSplit split : splitsToAssign) {
             if (!readers.isEmpty()) {
                 int readerId = readers.get(readerIndex % readers.size());
@@ -172,7 +174,8 @@ public class FlussSourceSplitEnumerator implements SourceSplitEnumerator<FlussSo
         for (Map.Entry<Integer, List<FlussSourceSplit>> entry : assignment.entrySet()) {
             if (!entry.getValue().isEmpty()) {
                 context.assignSplit(entry.getKey(), entry.getValue());
-                log.info("Assigned {} splits to reader {}", entry.getValue().size(), entry.getKey());
+                log.info(
+                        "Assigned {} splits to reader {}", entry.getValue().size(), entry.getKey());
             }
         }
 

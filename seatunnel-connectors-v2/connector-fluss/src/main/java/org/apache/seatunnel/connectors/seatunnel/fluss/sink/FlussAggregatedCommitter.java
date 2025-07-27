@@ -30,7 +30,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class FlussAggregatedCommitter implements SinkAggregatedCommitter<FlussCommitInfo, FlussAggregatedCommitInfo> {
+public class FlussAggregatedCommitter
+        implements SinkAggregatedCommitter<FlussCommitInfo, FlussAggregatedCommitInfo> {
 
     private final FlussSinkConfig sinkConfig;
     private Object flussClient;
@@ -48,34 +49,39 @@ public class FlussAggregatedCommitter implements SinkAggregatedCommitter<FlussCo
     }
 
     @Override
-    public List<FlussAggregatedCommitInfo> commit(List<FlussAggregatedCommitInfo> aggregatedCommitInfos)
-            throws IOException {
+    public List<FlussAggregatedCommitInfo> commit(
+            List<FlussAggregatedCommitInfo> aggregatedCommitInfos) throws IOException {
         List<FlussAggregatedCommitInfo> failedCommits = new ArrayList<>();
-        
+
         for (FlussAggregatedCommitInfo commitInfo : aggregatedCommitInfos) {
             try {
                 commitTransactions(commitInfo.getTransactionIds());
-                log.info("Successfully committed {} transactions for checkpoint {}", 
-                        commitInfo.getTransactionIds().size(), commitInfo.getCheckpointId());
+                log.info(
+                        "Successfully committed {} transactions for checkpoint {}",
+                        commitInfo.getTransactionIds().size(),
+                        commitInfo.getCheckpointId());
             } catch (Exception e) {
-                log.error("Failed to commit transactions for checkpoint {}", 
-                        commitInfo.getCheckpointId(), e);
+                log.error(
+                        "Failed to commit transactions for checkpoint {}",
+                        commitInfo.getCheckpointId(),
+                        e);
                 failedCommits.add(commitInfo);
             }
         }
-        
+
         return failedCommits;
     }
 
     @Override
     public FlussAggregatedCommitInfo combine(List<FlussCommitInfo> commitInfos) {
-        List<String> transactionIds = commitInfos.stream()
-                .map(FlussCommitInfo::getTransactionId)
-                .collect(Collectors.toList());
-        
+        List<String> transactionIds =
+                commitInfos.stream()
+                        .map(FlussCommitInfo::getTransactionId)
+                        .collect(Collectors.toList());
+
         // Use current time as checkpoint ID if not available
         long checkpointId = System.currentTimeMillis();
-        
+
         return new FlussAggregatedCommitInfo(transactionIds, checkpointId);
     }
 
@@ -84,11 +90,15 @@ public class FlussAggregatedCommitter implements SinkAggregatedCommitter<FlussCo
         for (FlussAggregatedCommitInfo commitInfo : aggregatedCommitInfos) {
             try {
                 abortTransactions(commitInfo.getTransactionIds());
-                log.info("Successfully aborted {} transactions for checkpoint {}", 
-                        commitInfo.getTransactionIds().size(), commitInfo.getCheckpointId());
+                log.info(
+                        "Successfully aborted {} transactions for checkpoint {}",
+                        commitInfo.getTransactionIds().size(),
+                        commitInfo.getCheckpointId());
             } catch (Exception e) {
-                log.error("Failed to abort transactions for checkpoint {}", 
-                        commitInfo.getCheckpointId(), e);
+                log.error(
+                        "Failed to abort transactions for checkpoint {}",
+                        commitInfo.getCheckpointId(),
+                        e);
                 // Continue aborting other transactions even if one fails
             }
         }
@@ -108,7 +118,7 @@ public class FlussAggregatedCommitter implements SinkAggregatedCommitter<FlussCo
 
     private void initializeFlussClient() throws Exception {
         log.info("Initializing Fluss client for aggregated committer");
-        
+
         // Initialize Fluss client with configuration
         // This is a placeholder - actual implementation would use Fluss client API
         // Properties props = new Properties();

@@ -17,56 +17,34 @@
 
 package org.apache.seatunnel.connectors.seatunnel.fluss.config;
 
-import org.apache.seatunnel.api.configuration.Option;
-import org.apache.seatunnel.api.configuration.Options;
-
+/**
+ * Sink-specific options for Fluss connector, following the official Fluss design pattern.
+ *
+ * <p>This class only defines sink-specific options that are not covered by the core
+ * Fluss configuration. Performance, transaction, and client-related options should be
+ * configured through the fluss.config map.
+ *
+ * <p>All sink options are already defined in {@link FlussOptions} as they are shared
+ * between source and sink connectors:
+ * <ul>
+ *   <li>{@link FlussOptions#SINK_IGNORE_DELETE} - Whether to ignore delete records</li>
+ *   <li>{@link FlussOptions#SINK_BUCKET_SHUFFLE} - Whether to shuffle by bucket id</li>
+ * </ul>
+ *
+ * <p>Other sink configurations should be specified in fluss.config:
+ * <pre>{@code
+ * fluss.config = {
+ *   "batch.size" = "1000"
+ *   "batch.timeout.ms" = "5000"
+ *   "enable.transaction" = "true"
+ *   "transaction.timeout" = "15min"
+ *   "enable.exactly.once" = "false"
+ *   "transactional.id.prefix" = "seatunnel-fluss"
+ * }
+ * }</pre>
+ */
 public class FlussSinkOptions extends FlussOptions {
 
-    public static final Option<Integer> BATCH_SIZE =
-            Options.key("batch.size")
-                    .intType()
-                    .defaultValue(1000)
-                    .withDescription("Number of records to batch before writing to Fluss");
-
-    public static final Option<Long> BATCH_TIMEOUT_MS =
-            Options.key("batch.timeout.ms")
-                    .longType()
-                    .defaultValue(5000L)
-                    .withDescription("Maximum time to wait before flushing a batch in milliseconds");
-
-    public static final Option<Integer> MAX_RETRIES =
-            Options.key("max.retries")
-                    .intType()
-                    .defaultValue(3)
-                    .withDescription("Maximum number of retries for failed writes");
-
-    public static final Option<String> WRITE_MODE =
-            Options.key("write.mode")
-                    .stringType()
-                    .defaultValue("append")
-                    .withDescription("Write mode: append, upsert");
-
-    public static final Option<Boolean> ENABLE_TRANSACTION =
-            Options.key("enable.transaction")
-                    .booleanType()
-                    .defaultValue(true)
-                    .withDescription("Whether to enable transactional writes");
-
-    public static final Option<String> TRANSACTION_TIMEOUT =
-            Options.key("transaction.timeout")
-                    .stringType()
-                    .defaultValue("15min")
-                    .withDescription("Transaction timeout duration");
-
-    public static final Option<Boolean> ENABLE_EXACTLY_ONCE =
-            Options.key("enable.exactly.once")
-                    .booleanType()
-                    .defaultValue(false)
-                    .withDescription("Whether to enable exactly-once semantics");
-
-    public static final Option<String> TRANSACTIONAL_ID_PREFIX =
-            Options.key("transactional.id.prefix")
-                    .stringType()
-                    .defaultValue("seatunnel-fluss")
-                    .withDescription("Prefix for transactional IDs");
+    // All sink-specific options are defined in FlussOptions
+    // This class exists for consistency and future sink-specific extensions
 }

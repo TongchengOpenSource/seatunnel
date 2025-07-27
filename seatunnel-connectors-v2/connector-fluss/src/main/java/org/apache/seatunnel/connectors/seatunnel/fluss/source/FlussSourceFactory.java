@@ -28,16 +28,12 @@ import org.apache.seatunnel.api.table.connector.TableSource;
 import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.api.table.factory.TableSourceFactory;
 import org.apache.seatunnel.api.table.factory.TableSourceFactoryContext;
-import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSourceOptions;
 
 import com.google.auto.service.AutoService;
 
 import java.io.Serializable;
 
-import static org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSourceOptions.*;
-
-@AutoService(Factory.class)
-public class FlussSourceFactory implements TableSourceFactory {
+static @AutoService(Factory.class) public class FlussSourceFactory implements TableSourceFactory {
 
     @Override
     public String factoryIdentifier() {
@@ -60,8 +56,7 @@ public class FlussSourceFactory implements TableSourceFactory {
                         REQUEST_TIMEOUT_MS,
                         RETRY_TIMES,
                         RETRY_INTERVAL_MS,
-                        FLUSS_CONFIG
-                )
+                        FLUSS_CONFIG)
                 .build();
     }
 

@@ -20,18 +20,16 @@ package org.apache.seatunnel.connectors.seatunnel.fluss.sink;
 import org.apache.seatunnel.api.sink.SinkWriter;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
+import org.apache.seatunnel.connectors.seatunnel.fluss.client.FlussConnectionManager;
 import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorException;
-import org.apache.seatunnel.connectors.seatunnel.fluss.client.FlussConnectionManager;
-import org.apache.seatunnel.connectors.seatunnel.fluss.sink.commit.FlussCommitInfo;
 import org.apache.seatunnel.connectors.seatunnel.fluss.util.FlussTypeConverter;
 
 import com.alibaba.fluss.client.table.Table;
 import com.alibaba.fluss.client.table.writer.AppendWriter;
 import com.alibaba.fluss.client.table.writer.UpsertWriter;
 import com.alibaba.fluss.row.GenericRow;
-
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -83,16 +81,12 @@ public class FlussSinkWriter implements SinkWriter<SeaTunnelRow, FlussCommitInfo
     public void write(SeaTunnelRow element) throws IOException {
         try {
             bufferedRows.add(element);
-            
-            // Check if we should flush based on batch size or timeout
             if (shouldFlush()) {
                 flush(false);
             }
         } catch (Exception e) {
             throw new FlussConnectorException(
-                    FlussConnectorErrorCode.WRITE_DATA_FAILED,
-                    "Failed to write data to Fluss",
-                    e);
+                    FlussConnectorErrorCode.WRITE_DATA_FAILED, "Failed to write data to Fluss", e);
         }
     }
 
@@ -104,15 +98,14 @@ public class FlussSinkWriter implements SinkWriter<SeaTunnelRow, FlussCommitInfo
 
             if (sinkConfig.getEnableTransaction()) {
                 // For transactional writes, return commit info
-                return Optional.of(new FlussCommitInfo("transaction-" + System.currentTimeMillis()));
+                return Optional.of(
+                        new FlussCommitInfo("transaction-" + System.currentTimeMillis()));
             }
 
             return Optional.empty();
         } catch (Exception e) {
             throw new FlussConnectorException(
-                    FlussConnectorErrorCode.TRANSACTION_FAILED,
-                    "Failed to prepare commit",
-                    e);
+                    FlussConnectorErrorCode.TRANSACTION_FAILED, "Failed to prepare commit", e);
         }
     }
 
@@ -124,13 +117,11 @@ public class FlussSinkWriter implements SinkWriter<SeaTunnelRow, FlussCommitInfo
                 state.setTransactionIds(Collections.singletonList(getCurrentTransactionId()));
             }
             state.setLastCheckpointId(checkpointId);
-            
+
             return Collections.singletonList(state);
         } catch (Exception e) {
             throw new FlussConnectorException(
-                    FlussConnectorErrorCode.INTERNAL_ERROR,
-                    "Failed to snapshot state",
-                    e);
+                    FlussConnectorErrorCode.INTERNAL_ERROR, "Failed to snapshot state", e);
         }
     }
 
@@ -143,9 +134,7 @@ public class FlussSinkWriter implements SinkWriter<SeaTunnelRow, FlussCommitInfo
             }
         } catch (Exception e) {
             throw new FlussConnectorException(
-                    FlussConnectorErrorCode.TRANSACTION_FAILED,
-                    "Failed to abort transactions",
-                    e);
+                    FlussConnectorErrorCode.TRANSACTION_FAILED, "Failed to abort transactions", e);
         }
     }
 
@@ -179,13 +168,8 @@ public class FlussSinkWriter implements SinkWriter<SeaTunnelRow, FlussCommitInfo
     private void initializeFlussClient() throws Exception {
         log.info("Initializing Fluss client for sink");
 
-        // Create connection manager
         connectionManager = new FlussConnectionManager(sinkConfig.toFlussProperties());
-
-        // Get table instance
         flussTable = connectionManager.getTable(sinkConfig.getDatabase(), sinkConfig.getTable());
-
-        // Create appropriate writer based on write mode
         if (isUpsertMode) {
             upsertWriter = flussTable.newUpsert().createWriter();
             log.info("Created upsert writer for table {}", sinkConfig.getFullTableName());
@@ -197,8 +181,8 @@ public class FlussSinkWriter implements SinkWriter<SeaTunnelRow, FlussCommitInfo
 
     private boolean shouldFlush() {
         long currentTime = System.currentTimeMillis();
-        return bufferedRows.size() >= sinkConfig.getBatchSize() ||
-               (currentTime - lastFlushTime) >= sinkConfig.getBatchTimeoutMs();
+        return bufferedRows.size() >= sinkConfig.getBatchSize()
+                || (currentTime - lastFlushTime) >= sinkConfig.getBatchTimeoutMs();
     }
 
     private void flush(boolean force) throws Exception {
@@ -235,11 +219,7 @@ public class FlussSinkWriter implements SinkWriter<SeaTunnelRow, FlussCommitInfo
 
         } catch (Exception e) {
             throw new FlussConnectorException(
-                    FlussConnectorErrorCode.WRITE_DATA_FAILED,
-                    "Failed to flush data to Fluss",
-                    e);
+                    FlussConnectorErrorCode.WRITE_DATA_FAILED, "Failed to flush data to Fluss", e);
         }
     }
-
-
 }

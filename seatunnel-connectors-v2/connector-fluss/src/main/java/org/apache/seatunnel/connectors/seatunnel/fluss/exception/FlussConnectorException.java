@@ -25,7 +25,8 @@ public class FlussConnectorException extends SeaTunnelRuntimeException {
         super(errorCode, errorMessage);
     }
 
-    public FlussConnectorException(FlussConnectorErrorCode errorCode, String errorMessage, Throwable cause) {
+    public FlussConnectorException(
+            FlussConnectorErrorCode errorCode, String errorMessage, Throwable cause) {
         super(errorCode, errorMessage, cause);
     }
 

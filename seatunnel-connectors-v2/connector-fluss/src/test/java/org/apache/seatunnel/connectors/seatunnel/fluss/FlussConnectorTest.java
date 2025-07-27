@@ -18,8 +18,8 @@
 package org.apache.seatunnel.connectors.seatunnel.fluss;
 
 import org.apache.seatunnel.api.configuration.ReadonlyConfig;
-import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSourceConfig;
 import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSinkConfig;
+import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSourceConfig;
 import org.apache.seatunnel.connectors.seatunnel.fluss.config.StartupMode;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorException;
 import org.apache.seatunnel.connectors.seatunnel.fluss.util.FlussUtil;
@@ -29,9 +29,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-public class FlussConnectorTest {
+public static class FlussConnectorTest {
 
     @Test
     public void testFlussSourceConfig() {
@@ -41,10 +39,10 @@ public class FlussConnectorTest {
         configMap.put("table", "test_table");
         configMap.put("scan.startup.mode", "earliest");
         configMap.put("fetch.size", 1000);
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
         FlussSourceConfig sourceConfig = new FlussSourceConfig(config);
-        
+
         assertEquals("localhost:9092", sourceConfig.getBootstrapServers());
         assertEquals("test_db", sourceConfig.getDatabase());
         assertEquals("test_table", sourceConfig.getTable());
@@ -62,10 +60,10 @@ public class FlussConnectorTest {
         configMap.put("batch.size", 1000);
         configMap.put("write.mode", "append");
         configMap.put("enable.transaction", true);
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
         FlussSinkConfig sinkConfig = new FlussSinkConfig(config);
-        
+
         assertEquals("localhost:9092", sinkConfig.getBootstrapServers());
         assertEquals("test_db", sinkConfig.getDatabase());
         assertEquals("test_table", sinkConfig.getTable());
@@ -82,7 +80,7 @@ public class FlussConnectorTest {
         assertDoesNotThrow(() -> FlussUtil.validateDatabaseName("valid_db"));
         assertDoesNotThrow(() -> FlussUtil.validateBootstrapServers("localhost:9092"));
         assertDoesNotThrow(() -> FlussUtil.validateBootstrapServers("host1:9092,host2:9092"));
-        
+
         // Test invalid names
         assertThrows(Exception.class, () -> FlussUtil.validateTableName(""));
         assertThrows(Exception.class, () -> FlussUtil.validateTableName("123invalid"));
@@ -97,7 +95,9 @@ public class FlussConnectorTest {
         assertEquals(StartupMode.LATEST, FlussUtil.parseStartupMode("latest"));
         assertEquals(StartupMode.TIMESTAMP, FlussUtil.parseStartupMode("timestamp"));
         assertEquals(StartupMode.EARLIEST, FlussUtil.parseStartupMode(null));
-        assertEquals(StartupMode.EARLIEST, FlussUtil.parseStartupMode("invalid")); // Should default to EARLIEST
+        assertEquals(
+                StartupMode.EARLIEST,
+                FlussUtil.parseStartupMode("invalid")); // Should default to EARLIEST
     }
 
     @Test
@@ -105,7 +105,7 @@ public class FlussConnectorTest {
         assertEquals(FlussUtil.WriteMode.APPEND, FlussUtil.parseWriteMode("append"));
         assertEquals(FlussUtil.WriteMode.UPSERT, FlussUtil.parseWriteMode("upsert"));
         assertEquals(FlussUtil.WriteMode.APPEND, FlussUtil.parseWriteMode(null));
-        
+
         assertThrows(Exception.class, () -> FlussUtil.parseWriteMode("invalid"));
     }
 
@@ -158,16 +158,18 @@ public class FlussConnectorTest {
         invalidTimestampMap.put("scan.startup.timestamp", -1L); // Invalid negative timestamp
 
         ReadonlyConfig invalidTimestampConfig = ReadonlyConfig.fromMap(invalidTimestampMap);
-        assertThrows(FlussConnectorException.class, () -> new FlussSourceConfig(invalidTimestampConfig));
+        assertThrows(
+                FlussConnectorException.class, () -> new FlussSourceConfig(invalidTimestampConfig));
 
         // Test missing required fields
         Map<String, Object> missingFieldsMap = new HashMap<>();
-        missingFieldsMap.put("bootstrap.servers", "");  // Empty bootstrap servers
+        missingFieldsMap.put("bootstrap.servers", ""); // Empty bootstrap servers
         missingFieldsMap.put("database", "test_db");
         missingFieldsMap.put("table", "test_table");
 
         ReadonlyConfig missingFieldsConfig = ReadonlyConfig.fromMap(missingFieldsMap);
-        assertThrows(FlussConnectorException.class, () -> new FlussSourceConfig(missingFieldsConfig));
+        assertThrows(
+                FlussConnectorException.class, () -> new FlussSourceConfig(missingFieldsConfig));
     }
 
     @Test
@@ -180,7 +182,8 @@ public class FlussConnectorTest {
         invalidWriteModeMap.put("write.mode", "invalid_mode");
 
         ReadonlyConfig invalidWriteModeConfig = ReadonlyConfig.fromMap(invalidWriteModeMap);
-        assertThrows(FlussConnectorException.class, () -> new FlussSinkConfig(invalidWriteModeConfig));
+        assertThrows(
+                FlussConnectorException.class, () -> new FlussSinkConfig(invalidWriteModeConfig));
 
         // Test invalid batch size
         Map<String, Object> invalidBatchSizeMap = new HashMap<>();
@@ -190,7 +193,8 @@ public class FlussConnectorTest {
         invalidBatchSizeMap.put("batch.size", 0); // Invalid batch size
 
         ReadonlyConfig invalidBatchSizeConfig = ReadonlyConfig.fromMap(invalidBatchSizeMap);
-        assertThrows(FlussConnectorException.class, () -> new FlussSinkConfig(invalidBatchSizeConfig));
+        assertThrows(
+                FlussConnectorException.class, () -> new FlussSinkConfig(invalidBatchSizeConfig));
 
         // Test exactly-once without transaction
         Map<String, Object> exactlyOnceMap = new HashMap<>();
