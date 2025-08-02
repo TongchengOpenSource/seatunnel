@@ -25,11 +25,8 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-/**
- * Unit tests for {@link FlussSinkConfig}.
- */
+static
+/** Unit tests for {@link FlussSinkConfig}. */
 class FlussSinkConfigTest {
 
     @Test
@@ -38,10 +35,10 @@ class FlussSinkConfigTest {
         configMap.put("bootstrap.servers", "localhost:9092");
         configMap.put("database", "test_db");
         configMap.put("table", "test_table");
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
         FlussSinkConfig sinkConfig = new FlussSinkConfig(config);
-        
+
         assertEquals("localhost:9092", sinkConfig.getBootstrapServers());
         assertEquals("test_db", sinkConfig.getDatabase());
         assertEquals("test_table", sinkConfig.getTable());
@@ -59,10 +56,10 @@ class FlussSinkConfigTest {
         configMap.put("bucket.key", "user_id");
         configMap.put("sink.ignore-delete", true);
         configMap.put("sink.bucket-shuffle", false);
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
         FlussSinkConfig sinkConfig = new FlussSinkConfig(config);
-        
+
         Map<String, Object> properties = sinkConfig.getFlussProperties();
         assertEquals("localhost:9092", properties.get("bootstrap.servers"));
         assertEquals(16, properties.get("bucket.num"));
@@ -77,17 +74,17 @@ class FlussSinkConfigTest {
         configMap.put("bootstrap.servers", "localhost:9092");
         configMap.put("database", "test_db");
         configMap.put("table", "test_table");
-        
+
         Map<String, String> flussConfig = new HashMap<>();
         flussConfig.put("batch.size", "2000");
         flussConfig.put("batch.timeout.ms", "10000");
         flussConfig.put("enable.transaction", "true");
         flussConfig.put("client.id", "test-sink");
         configMap.put("fluss.config", flussConfig);
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
         FlussSinkConfig sinkConfig = new FlussSinkConfig(config);
-        
+
         Map<String, Object> properties = sinkConfig.getFlussProperties();
         assertEquals("localhost:9092", properties.get("bootstrap.servers"));
         assertEquals("2000", properties.get("batch.size"));
@@ -102,9 +99,9 @@ class FlussSinkConfigTest {
         configMap.put("database", "test_db");
         configMap.put("table", "test_table");
         // Missing bootstrap.servers
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
+
         assertThrows(FlussConnectorException.class, () -> new FlussSinkConfig(config));
     }
 
@@ -114,9 +111,9 @@ class FlussSinkConfigTest {
         configMap.put("bootstrap.servers", "localhost:9092");
         configMap.put("table", "test_table");
         // Missing database
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
+
         assertThrows(FlussConnectorException.class, () -> new FlussSinkConfig(config));
     }
 
@@ -126,9 +123,9 @@ class FlussSinkConfigTest {
         configMap.put("bootstrap.servers", "localhost:9092");
         configMap.put("database", "test_db");
         // Missing table
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
+
         assertThrows(FlussConnectorException.class, () -> new FlussSinkConfig(config));
     }
 
@@ -138,9 +135,9 @@ class FlussSinkConfigTest {
         configMap.put("bootstrap.servers", "");
         configMap.put("database", "   ");
         configMap.put("table", "test_table");
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
+
         assertThrows(FlussConnectorException.class, () -> new FlussSinkConfig(config));
     }
 
@@ -155,7 +152,7 @@ class FlussSinkConfigTest {
         configMap.put("sink.ignore-delete", false);
         configMap.put("sink.bucket-shuffle", true);
         configMap.put("lookup.async", true);
-        
+
         Map<String, String> flussConfig = new HashMap<>();
         flussConfig.put("batch.size", "5000");
         flussConfig.put("batch.timeout.ms", "8000");
@@ -167,15 +164,15 @@ class FlussSinkConfigTest {
         flussConfig.put("connection.timeout.ms", "30000");
         flussConfig.put("compression.type", "lz4");
         configMap.put("fluss.config", flussConfig);
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
         FlussSinkConfig sinkConfig = new FlussSinkConfig(config);
-        
+
         assertEquals("host1:9092,host2:9092", sinkConfig.getBootstrapServers());
         assertEquals("production", sinkConfig.getDatabase());
         assertEquals("orders", sinkConfig.getTable());
         assertEquals("production.orders", sinkConfig.getFullTableName());
-        
+
         Map<String, Object> properties = sinkConfig.getFlussProperties();
         assertEquals("host1:9092,host2:9092", properties.get("bootstrap.servers"));
         assertEquals(32, properties.get("bucket.num"));
@@ -183,7 +180,7 @@ class FlussSinkConfigTest {
         assertEquals(false, properties.get("sink.ignore-delete"));
         assertEquals(true, properties.get("sink.bucket-shuffle"));
         assertEquals(true, properties.get("lookup.async"));
-        
+
         // Verify fluss.config properties
         assertEquals("5000", properties.get("batch.size"));
         assertEquals("8000", properties.get("batch.timeout.ms"));
@@ -202,12 +199,12 @@ class FlussSinkConfigTest {
         configMap.put("bootstrap.servers", "localhost:9092");
         configMap.put("database", "test_db");
         configMap.put("table", "test_table");
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
         FlussSinkConfig sinkConfig = new FlussSinkConfig(config);
-        
+
         Map<String, Object> properties = sinkConfig.getFlussProperties();
-        
+
         // Verify default values from FlussOptions
         assertEquals(false, properties.get("sink.ignore-delete"));
         assertEquals(true, properties.get("sink.bucket-shuffle"));

@@ -31,15 +31,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Implementation of {@link OffsetsInitializer.BucketOffsetsRetriever} that retrieves offsets
- * from Fluss using the Fluss client.
- * 
+ * Implementation of {@link OffsetsInitializer.BucketOffsetsRetriever} that retrieves offsets from
+ * Fluss using the Fluss client.
+ *
  * <p>This class handles the communication with Fluss to get various types of offsets:
+ *
  * <ul>
- *   <li>Latest offsets - the highest offset available in each bucket</li>
- *   <li>Earliest offsets - the lowest offset available in each bucket</li>
- *   <li>Timestamp-based offsets - offsets corresponding to a specific timestamp</li>
- *   <li>Snapshot offsets - offsets for snapshot reads (primary key tables)</li>
+ *   <li>Latest offsets - the highest offset available in each bucket
+ *   <li>Earliest offsets - the lowest offset available in each bucket
+ *   <li>Timestamp-based offsets - offsets corresponding to a specific timestamp
+ *   <li>Snapshot offsets - offsets for snapshot reads (primary key tables)
  * </ul>
  */
 @Slf4j
@@ -50,8 +51,7 @@ public class FlussOffsetsRetriever implements OffsetsInitializer.BucketOffsetsRe
     private final String tablePath;
 
     public FlussOffsetsRetriever(
-            FlussConnectionManager connectionManager,
-            FlussSourceConfig sourceConfig) {
+            FlussConnectionManager connectionManager, FlussSourceConfig sourceConfig) {
         this.connectionManager = connectionManager;
         this.sourceConfig = sourceConfig;
         this.tablePath = sourceConfig.getFullTableName();
@@ -60,9 +60,12 @@ public class FlussOffsetsRetriever implements OffsetsInitializer.BucketOffsetsRe
     @Override
     public Map<Integer, Long> latestOffsets(
             @Nullable String partitionName, Collection<Integer> buckets) {
-        
-        log.debug("Retrieving latest offsets for buckets: {} in partition: {}", buckets, partitionName);
-        
+
+        log.debug(
+                "Retrieving latest offsets for buckets: {} in partition: {}",
+                buckets,
+                partitionName);
+
         try {
             // TODO: Implement actual Fluss client call to get latest offsets
             // This is a placeholder implementation
@@ -72,23 +75,27 @@ public class FlussOffsetsRetriever implements OffsetsInitializer.BucketOffsetsRe
                 // In real implementation, this should call Fluss admin client
                 offsets.put(bucket, Long.MAX_VALUE);
             }
-            
+
             log.debug("Retrieved latest offsets: {}", offsets);
             return offsets;
-            
+
         } catch (Exception e) {
             throw new FlussConnectorException(
                     FlussConnectorErrorCode.GET_OFFSETS_FAILED,
-                    "Failed to retrieve latest offsets for table: " + tablePath, e);
+                    "Failed to retrieve latest offsets for table: " + tablePath,
+                    e);
         }
     }
 
     @Override
     public Map<Integer, Long> earliestOffsets(
             @Nullable String partitionName, Collection<Integer> buckets) {
-        
-        log.debug("Retrieving earliest offsets for buckets: {} in partition: {}", buckets, partitionName);
-        
+
+        log.debug(
+                "Retrieving earliest offsets for buckets: {} in partition: {}",
+                buckets,
+                partitionName);
+
         try {
             // TODO: Implement actual Fluss client call to get earliest offsets
             // This is a placeholder implementation
@@ -97,24 +104,28 @@ public class FlussOffsetsRetriever implements OffsetsInitializer.BucketOffsetsRe
                 // Use the same constant as EarliestOffsetsInitializer
                 offsets.put(bucket, EarliestOffsetsInitializer.EARLIEST_OFFSET);
             }
-            
+
             log.debug("Retrieved earliest offsets: {}", offsets);
             return offsets;
-            
+
         } catch (Exception e) {
             throw new FlussConnectorException(
                     FlussConnectorErrorCode.GET_OFFSETS_FAILED,
-                    "Failed to retrieve earliest offsets for table: " + tablePath, e);
+                    "Failed to retrieve earliest offsets for table: " + tablePath,
+                    e);
         }
     }
 
     @Override
     public Map<Integer, Long> offsetsFromTimestamp(
             @Nullable String partitionName, Collection<Integer> buckets, long timestamp) {
-        
-        log.debug("Retrieving offsets from timestamp {} for buckets: {} in partition: {}", 
-                timestamp, buckets, partitionName);
-        
+
+        log.debug(
+                "Retrieving offsets from timestamp {} for buckets: {} in partition: {}",
+                timestamp,
+                buckets,
+                partitionName);
+
         try {
             // TODO: Implement actual Fluss client call to get offsets by timestamp
             // This is a placeholder implementation
@@ -125,23 +136,30 @@ public class FlussOffsetsRetriever implements OffsetsInitializer.BucketOffsetsRe
                 long offset = Math.max(0, timestamp / 1000); // Simple placeholder calculation
                 offsets.put(bucket, offset);
             }
-            
+
             log.debug("Retrieved timestamp-based offsets: {}", offsets);
             return offsets;
-            
+
         } catch (Exception e) {
             throw new FlussConnectorException(
                     FlussConnectorErrorCode.GET_OFFSETS_FAILED,
-                    "Failed to retrieve offsets from timestamp " + timestamp + " for table: " + tablePath, e);
+                    "Failed to retrieve offsets from timestamp "
+                            + timestamp
+                            + " for table: "
+                            + tablePath,
+                    e);
         }
     }
 
     @Override
     public Map<Integer, Long> snapshotOffsets(
             @Nullable String partitionName, Collection<Integer> buckets) {
-        
-        log.debug("Retrieving snapshot offsets for buckets: {} in partition: {}", buckets, partitionName);
-        
+
+        log.debug(
+                "Retrieving snapshot offsets for buckets: {} in partition: {}",
+                buckets,
+                partitionName);
+
         try {
             // TODO: Implement actual Fluss client call to get snapshot offsets
             // This is a placeholder implementation
@@ -151,10 +169,10 @@ public class FlussOffsetsRetriever implements OffsetsInitializer.BucketOffsetsRe
                 // For log tables, this might throw an exception or return earliest offset
                 offsets.put(bucket, 0L); // Placeholder
             }
-            
+
             log.debug("Retrieved snapshot offsets: {}", offsets);
             return offsets;
-            
+
         } catch (Exception e) {
             log.warn("Failed to retrieve snapshot offsets, falling back to earliest offsets", e);
             // Fall back to earliest offsets if snapshot is not supported
@@ -162,9 +180,7 @@ public class FlussOffsetsRetriever implements OffsetsInitializer.BucketOffsetsRe
         }
     }
 
-    /**
-     * Close any resources used by this retriever.
-     */
+    /** Close any resources used by this retriever. */
     public void close() {
         // Close any resources if needed
         log.debug("Closing FlussOffsetsRetriever");

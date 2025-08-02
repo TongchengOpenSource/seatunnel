@@ -37,19 +37,20 @@ import java.util.stream.Collectors;
 
 /**
  * Utility class for Fluss connector options, inspired by the official Fluss implementation.
- * 
+ *
  * <p>This class provides helper methods for:
+ *
  * <ul>
- *   <li>Validating configuration options</li>
- *   <li>Converting between different configuration formats</li>
- *   <li>Creating startup options from configuration</li>
- *   <li>Building Fluss client properties</li>
+ *   <li>Validating configuration options
+ *   <li>Converting between different configuration formats
+ *   <li>Creating startup options from configuration
+ *   <li>Building Fluss client properties
  * </ul>
  */
 @Slf4j
 public class FlussConnectorOptionsUtils {
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = 
+    private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private FlussConnectorOptionsUtils() {
@@ -86,11 +87,12 @@ public class FlussConnectorOptionsUtils {
      */
     public static StartupOptions getStartupOptions(ReadonlyConfig config, ZoneId timeZone) {
         StartupMode startupMode = config.get(FlussSourceOptions.SCAN_STARTUP_MODE);
-        String timestampStr = config.getOptional(FlussSourceOptions.SCAN_STARTUP_TIMESTAMP).orElse(null);
-        
+        String timestampStr =
+                config.getOptional(FlussSourceOptions.SCAN_STARTUP_TIMESTAMP).orElse(null);
+
         StartupOptions options = new StartupOptions();
         options.startupMode = startupMode;
-        
+
         if (startupMode == StartupMode.TIMESTAMP) {
             if (timestampStr == null) {
                 throw new FlussConnectorException(
@@ -99,16 +101,18 @@ public class FlussConnectorOptionsUtils {
             }
             options.startupTimestampMs = parseTimestamp(timestampStr, timeZone);
         }
-        
+
         // Create OffsetsInitializer
         try {
-            options.offsetsInitializer = OffsetsInitializer.fromStartupMode(startupMode, options.startupTimestampMs);
+            options.offsetsInitializer =
+                    OffsetsInitializer.fromStartupMode(startupMode, options.startupTimestampMs);
         } catch (IllegalArgumentException e) {
             throw new FlussConnectorException(
                     FlussConnectorErrorCode.INVALID_CONFIGURATION,
-                    "Invalid startup configuration: " + e.getMessage(), e);
+                    "Invalid startup configuration: " + e.getMessage(),
+                    e);
         }
-        
+
         return options;
     }
 
@@ -120,9 +124,11 @@ public class FlussConnectorOptionsUtils {
      */
     public static List<String> getBucketKeys(ReadonlyConfig config) {
         return config.getOptional(FlussOptions.BUCKET_KEY)
-                .map(bucketKey -> Arrays.stream(bucketKey.split(","))
-                        .map(String::trim)
-                        .collect(Collectors.toList()))
+                .map(
+                        bucketKey ->
+                                Arrays.stream(bucketKey.split(","))
+                                        .map(String::trim)
+                                        .collect(Collectors.toList()))
                 .orElse(new ArrayList<>());
     }
 
@@ -134,34 +140,38 @@ public class FlussConnectorOptionsUtils {
      */
     public static Map<String, Object> buildFlussProperties(ReadonlyConfig config) {
         Map<String, Object> properties = new HashMap<>();
-        
+
         // Core connection properties
         properties.put("bootstrap.servers", config.get(FlussOptions.BOOTSTRAP_SERVERS));
-        
+
         // Optional bucket configuration
         config.getOptional(FlussOptions.BUCKET_NUMBER)
                 .ifPresent(bucketNum -> properties.put("bucket.num", bucketNum));
         config.getOptional(FlussOptions.BUCKET_KEY)
                 .ifPresent(bucketKey -> properties.put("bucket.key", bucketKey));
-        
+
         // Scan configuration
         config.getOptional(FlussOptions.SCAN_PARTITION_DISCOVERY_INTERVAL)
-                .ifPresent(interval -> properties.put("scan.partition.discovery.interval", interval.toString()));
-        
+                .ifPresent(
+                        interval ->
+                                properties.put(
+                                        "scan.partition.discovery.interval", interval.toString()));
+
         // Lookup configuration
         properties.put("lookup.async", config.get(FlussOptions.LOOKUP_ASYNC));
-        
+
         // Sink configuration
         properties.put("sink.ignore-delete", config.get(FlussOptions.SINK_IGNORE_DELETE));
         properties.put("sink.bucket-shuffle", config.get(FlussOptions.SINK_BUCKET_SHUFFLE));
-        
+
         // Additional Fluss configuration
         config.getOptional(FlussOptions.FLUSS_CONFIG)
-                .ifPresent(flussConfig -> {
-                    log.debug("Adding additional Fluss configuration: {}", flussConfig);
-                    properties.putAll(flussConfig);
-                });
-        
+                .ifPresent(
+                        flussConfig -> {
+                            log.debug("Adding additional Fluss configuration: {}", flussConfig);
+                            properties.putAll(flussConfig);
+                        });
+
         return properties;
     }
 
@@ -176,7 +186,7 @@ public class FlussConnectorOptionsUtils {
         if (timestampStr.matches("\\d+")) {
             return Long.parseLong(timestampStr);
         }
-        
+
         try {
             return LocalDateTime.parse(timestampStr, DATE_TIME_FORMATTER)
                     .atZone(timeZone)
@@ -188,7 +198,8 @@ public class FlussConnectorOptionsUtils {
                     String.format(
                             "Invalid timestamp format '%s'. Expected format: 'yyyy-MM-dd HH:mm:ss' or timestamp in milliseconds. "
                                     + "Examples: '2023-12-09 23:09:12' or '1678883047356'.",
-                            timestampStr), e);
+                            timestampStr),
+                    e);
         }
     }
 
@@ -208,7 +219,7 @@ public class FlussConnectorOptionsUtils {
 
     private static void validateScanStartupMode(ReadonlyConfig config) {
         StartupMode startupMode = config.get(FlussSourceOptions.SCAN_STARTUP_MODE);
-        
+
         if (startupMode == StartupMode.TIMESTAMP) {
             if (!config.getOptional(FlussSourceOptions.SCAN_STARTUP_TIMESTAMP).isPresent()) {
                 throw new FlussConnectorException(
@@ -229,7 +240,7 @@ public class FlussConnectorOptionsUtils {
                     FlussConnectorErrorCode.INVALID_CONFIGURATION,
                     "bootstrap.servers cannot be null or empty");
         }
-        
+
         // Validate database
         String database = config.get(FlussOptions.DATABASE);
         if (database == null || database.trim().isEmpty()) {
@@ -237,31 +248,31 @@ public class FlussConnectorOptionsUtils {
                     FlussConnectorErrorCode.INVALID_CONFIGURATION,
                     "database cannot be null or empty");
         }
-        
+
         // Validate table
         String table = config.get(FlussOptions.TABLE);
         if (table == null || table.trim().isEmpty()) {
             throw new FlussConnectorException(
-                    FlussConnectorErrorCode.INVALID_CONFIGURATION,
-                    "table cannot be null or empty");
+                    FlussConnectorErrorCode.INVALID_CONFIGURATION, "table cannot be null or empty");
         }
     }
 
-    /**
-     * Startup options container.
-     */
+    /** Startup options container. */
     public static class StartupOptions {
         public StartupMode startupMode;
         public long startupTimestampMs;
         public OffsetsInitializer offsetsInitializer;
-        
+
         @Override
         public String toString() {
-            return "StartupOptions{" +
-                    "startupMode=" + startupMode +
-                    ", startupTimestampMs=" + startupTimestampMs +
-                    ", offsetsInitializer=" + OffsetsInitializerUtils.describe(offsetsInitializer) +
-                    '}';
+            return "StartupOptions{"
+                    + "startupMode="
+                    + startupMode
+                    + ", startupTimestampMs="
+                    + startupTimestampMs
+                    + ", offsetsInitializer="
+                    + OffsetsInitializerUtils.describe(offsetsInitializer)
+                    + '}';
         }
     }
 }

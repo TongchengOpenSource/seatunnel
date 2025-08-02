@@ -20,18 +20,20 @@ package org.apache.seatunnel.connectors.seatunnel.fluss.config;
 /**
  * Sink-specific options for Fluss connector, following the official Fluss design pattern.
  *
- * <p>This class only defines sink-specific options that are not covered by the core
- * Fluss configuration. Performance, transaction, and client-related options should be
- * configured through the fluss.config map.
+ * <p>This class only defines sink-specific options that are not covered by the core Fluss
+ * configuration. Performance, transaction, and client-related options should be configured through
+ * the fluss.config map.
  *
- * <p>All sink options are already defined in {@link FlussOptions} as they are shared
- * between source and sink connectors:
+ * <p>All sink options are already defined in {@link FlussOptions} as they are shared between source
+ * and sink connectors:
+ *
  * <ul>
- *   <li>{@link FlussOptions#SINK_IGNORE_DELETE} - Whether to ignore delete records</li>
- *   <li>{@link FlussOptions#SINK_BUCKET_SHUFFLE} - Whether to shuffle by bucket id</li>
+ *   <li>{@link FlussOptions#SINK_IGNORE_DELETE} - Whether to ignore delete records
+ *   <li>{@link FlussOptions#SINK_BUCKET_SHUFFLE} - Whether to shuffle by bucket id
  * </ul>
  *
  * <p>Other sink configurations should be specified in fluss.config:
+ *
  * <pre>{@code
  * fluss.config = {
  *   "batch.size" = "1000"

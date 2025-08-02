@@ -26,114 +26,82 @@ import org.apache.seatunnel.api.table.catalog.exception.DatabaseAlreadyExistExce
 import org.apache.seatunnel.api.table.catalog.exception.DatabaseNotExistException;
 import org.apache.seatunnel.api.table.catalog.exception.TableAlreadyExistException;
 import org.apache.seatunnel.api.table.catalog.exception.TableNotExistException;
-import org.apache.seatunnel.connectors.seatunnel.fluss.client.FlussConnectionManager;
-import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussConnectorOptionsUtils;
+import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussOptions;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorException;
-import org.apache.seatunnel.connectors.seatunnel.fluss.utils.FlussTypeConverter;
 
+import com.alibaba.fluss.client.Connection;
+import com.alibaba.fluss.client.ConnectionFactory;
 import com.alibaba.fluss.client.admin.Admin;
-import com.alibaba.fluss.client.table.Table;
-import com.alibaba.fluss.metadata.TableDescriptor;
-import com.alibaba.fluss.metadata.TablePath;
-
+import com.alibaba.fluss.config.Configuration;
+import com.alibaba.fluss.metadata.TableInfo;
+import com.alibaba.fluss.utils.ExceptionUtils;
+import com.alibaba.fluss.utils.IOUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Fluss catalog implementation for SeaTunnel.
- * 
+ * Fluss catalog implementation for SeaTunnel, following the official Fluss Flink connector design.
+ *
  * <p>This catalog provides metadata operations for Fluss tables, including:
+ *
  * <ul>
- *   <li>Database operations: list, create, drop, check existence</li>
- *   <li>Table operations: list, create, drop, get metadata, check existence</li>
- *   <li>Metadata caching for improved performance</li>
+ *   <li>Database operations: list, create, drop, check existence
+ *   <li>Table operations: list, create, drop, get metadata, check existence
  * </ul>
- * 
- * <p>The catalog follows the SeaTunnel catalog interface and integrates with
- * Fluss admin client for metadata operations.
+ *
+ * <p>The catalog follows the SeaTunnel catalog interface and integrates with Fluss admin client for
+ * metadata operations.
  */
 @Slf4j
 public class FlussCatalog implements Catalog {
 
     private final String catalogName;
-    private final ReadonlyConfig config;
     private final String defaultDatabase;
-    private final boolean caseSensitive;
-    private final Map<String, Object> flussProperties;
-    
-    // Connection and client management
-    private FlussConnectionManager connectionManager;
-    
-    // Metadata cache
-    private final Map<String, List<String>> databaseTablesCache;
-    private final Map<TablePath, CatalogTable> tableMetadataCache;
-    private final long metadataCacheTtl;
-    private final int metadataCacheSize;
-    
-    // Cache timestamps
-    private final Map<String, Long> databaseCacheTimestamps;
-    private final Map<TablePath, Long> tableCacheTimestamps;
+    private final String bootstrapServers;
+
+    private Connection connection;
+    private Admin admin;
 
     public FlussCatalog(String catalogName, ReadonlyConfig config) {
         this.catalogName = catalogName;
-        this.config = config;
         this.defaultDatabase = config.get(FlussCatalogOptions.DEFAULT_DATABASE);
-        this.caseSensitive = config.get(FlussCatalogOptions.CASE_SENSITIVE);
-        this.metadataCacheTtl = config.get(FlussCatalogOptions.METADATA_CACHE_TTL_MS);
-        this.metadataCacheSize = config.get(FlussCatalogOptions.METADATA_CACHE_SIZE);
-        
-        // Build Fluss properties
-        this.flussProperties = FlussConnectorOptionsUtils.buildFlussProperties(config);
-        
-        // Initialize caches
-        this.databaseTablesCache = new ConcurrentHashMap<>();
-        this.tableMetadataCache = new ConcurrentHashMap<>();
-        this.databaseCacheTimestamps = new ConcurrentHashMap<>();
-        this.tableCacheTimestamps = new ConcurrentHashMap<>();
-        
-        log.info("Created Fluss catalog '{}' with default database '{}'", catalogName, defaultDatabase);
+        this.bootstrapServers = config.get(FlussOptions.BOOTSTRAP_SERVERS);
+
+        log.info(
+                "Created Fluss catalog '{}' with default database '{}'",
+                catalogName,
+                defaultDatabase);
     }
 
     @Override
     public void open() throws CatalogException {
         try {
-            // Validate configuration
-            FlussConnectorOptionsUtils.validateSinkOptions(config);
+            Map<String, String> flussConfigs = new HashMap<>();
+            flussConfigs.put("bootstrap.servers", bootstrapServers);
 
-            // Initialize connection manager
-            this.connectionManager = new FlussConnectionManager(flussProperties);
-
-            // Test connection
-            if (!connectionManager.isConnected()) {
-                throw new CatalogException("Failed to establish connection to Fluss cluster");
-            }
+            connection = ConnectionFactory.createConnection(Configuration.fromMap(flussConfigs));
+            admin = connection.getAdmin();
 
             log.info("Opened Fluss catalog '{}' successfully", catalogName);
         } catch (Exception e) {
             throw new CatalogException(
-                    String.format("Failed to open Fluss catalog '%s'", catalogName), e);
+                    String.format("Failed to open Fluss catalog '%s'", catalogName),
+                    ExceptionUtils.stripExecutionException(e));
         }
     }
 
     @Override
     public void close() throws CatalogException {
         try {
-            if (connectionManager != null) {
-                connectionManager.close();
-            }
-            
-            // Clear caches
-            databaseTablesCache.clear();
-            tableMetadataCache.clear();
-            databaseCacheTimestamps.clear();
-            tableCacheTimestamps.clear();
-            
+            IOUtils.closeQuietly(admin, "fluss-admin");
+            IOUtils.closeQuietly(connection, "fluss-connection");
+
             log.info("Closed Fluss catalog '{}' successfully", catalogName);
         } catch (Exception e) {
             throw new CatalogException(
@@ -146,7 +114,7 @@ public class FlussCatalog implements Catalog {
         return catalogName;
     }
 
-    @Override
+    @Nullable @Override
     public String getDefaultDatabase() throws CatalogException {
         return defaultDatabase;
     }
@@ -154,47 +122,23 @@ public class FlussCatalog implements Catalog {
     @Override
     public boolean databaseExists(String databaseName) throws CatalogException {
         try {
-            String normalizedName = normalizeName(databaseName);
-            Admin admin = connectionManager.getAdmin();
-
-            // Get list of databases and check if the specified database exists
-            List<String> databases = admin.listDatabases().get();
-            return databases.contains(normalizedName);
-
+            return admin.databaseExists(databaseName).get();
         } catch (Exception e) {
             throw new CatalogException(
-                    String.format("Failed to check if database '%s' exists", databaseName), e);
+                    String.format(
+                            "Failed to check if database '%s' exists in %s", databaseName, name()),
+                    ExceptionUtils.stripExecutionException(e));
         }
     }
 
     @Override
     public List<String> listDatabases() throws CatalogException {
         try {
-            // Check cache first
-            String cacheKey = "databases";
-            if (isCacheValid(databaseCacheTimestamps.get(cacheKey))) {
-                List<String> cached = databaseTablesCache.get(cacheKey);
-                if (cached != null) {
-                    log.debug("Retrieved databases from cache: {}", cached);
-                    return cached;
-                }
-            }
-
-            // Get databases from Fluss admin client
-            Admin admin = connectionManager.getAdmin();
-            List<String> databases = admin.listDatabases().get();
-
-            // Update cache
-            if (metadataCacheTtl > 0) {
-                databaseTablesCache.put(cacheKey, databases);
-                databaseCacheTimestamps.put(cacheKey, System.currentTimeMillis());
-            }
-
-            log.debug("Listed databases: {}", databases);
-            return databases;
-
+            return admin.listDatabases().get();
         } catch (Exception e) {
-            throw new CatalogException("Failed to list databases", e);
+            throw new CatalogException(
+                    String.format("Failed to list all databases in %s", name()),
+                    ExceptionUtils.stripExecutionException(e));
         }
     }
 
@@ -202,64 +146,28 @@ public class FlussCatalog implements Catalog {
     public List<String> listTables(String databaseName)
             throws CatalogException, DatabaseNotExistException {
         try {
-            String normalizedName = normalizeName(databaseName);
-
-            if (!databaseExists(normalizedName)) {
-                throw new DatabaseNotExistException(catalogName, normalizedName);
-            }
-
-            // Check cache first
-            if (isCacheValid(databaseCacheTimestamps.get(normalizedName))) {
-                List<String> cached = databaseTablesCache.get(normalizedName);
-                if (cached != null) {
-                    log.debug("Retrieved tables for database '{}' from cache: {}", normalizedName, cached);
-                    return cached;
-                }
-            }
-
-            // Get tables from Fluss admin client
-            Admin admin = connectionManager.getAdmin();
-            List<String> tables = admin.listTables(normalizedName).get();
-
-            // Update cache
-            if (metadataCacheTtl > 0) {
-                databaseTablesCache.put(normalizedName, tables);
-                databaseCacheTimestamps.put(normalizedName, System.currentTimeMillis());
-            }
-
-            log.debug("Listed tables for database '{}': {}", normalizedName, tables);
-            return tables;
-
-        } catch (DatabaseNotExistException e) {
-            throw e;
+            return admin.listTables(databaseName).get();
         } catch (Exception e) {
+            Throwable t = ExceptionUtils.stripExecutionException(e);
+            if (isDatabaseNotExist(t)) {
+                throw new DatabaseNotExistException(name(), databaseName);
+            }
             throw new CatalogException(
-                    String.format("Failed to list tables in database '%s'", databaseName), e);
+                    String.format(
+                            "Failed to list all tables in database %s in %s", databaseName, name()),
+                    t);
         }
     }
 
     @Override
     public boolean tableExists(TablePath tablePath) throws CatalogException {
         try {
-            TablePath normalizedPath = normalizeTablePath(tablePath);
-
-            // Check if database exists first
-            if (!databaseExists(normalizedPath.getDatabaseName())) {
-                return false;
-            }
-
-            // Check if table exists using Fluss admin client
-            Admin admin = connectionManager.getAdmin();
-            com.alibaba.fluss.metadata.TablePath flussTablePath =
-                    com.alibaba.fluss.metadata.TablePath.of(
-                            normalizedPath.getDatabaseName(),
-                            normalizedPath.getTableName());
-
+            com.alibaba.fluss.metadata.TablePath flussTablePath = toFlussTablePath(tablePath);
             return admin.tableExists(flussTablePath).get();
-
         } catch (Exception e) {
             throw new CatalogException(
-                    String.format("Failed to check if table '%s' exists", tablePath), e);
+                    String.format("Failed to check if table %s exists in %s", tablePath, name()),
+                    ExceptionUtils.stripExecutionException(e));
         }
     }
 
@@ -267,71 +175,47 @@ public class FlussCatalog implements Catalog {
     public CatalogTable getTable(TablePath tablePath)
             throws CatalogException, TableNotExistException {
         try {
-            TablePath normalizedPath = normalizeTablePath(tablePath);
+            com.alibaba.fluss.metadata.TablePath flussTablePath = toFlussTablePath(tablePath);
 
-            // Check cache first
-            if (isCacheValid(tableCacheTimestamps.get(normalizedPath))) {
-                CatalogTable cached = tableMetadataCache.get(normalizedPath);
-                if (cached != null) {
-                    log.debug("Retrieved table metadata for '{}' from cache", normalizedPath);
-                    return cached;
-                }
+            if (!tableExists(tablePath)) {
+                throw new TableNotExistException(name(), tablePath);
             }
-
-            if (!tableExists(normalizedPath)) {
-                throw new TableNotExistException(catalogName, normalizedPath);
-            }
-
-            // Get table metadata from Fluss admin client
-            Admin admin = connectionManager.getAdmin();
-            com.alibaba.fluss.metadata.TablePath flussTablePath =
-                    com.alibaba.fluss.metadata.TablePath.of(
-                            normalizedPath.getDatabaseName(),
-                            normalizedPath.getTableName());
-
-            TableDescriptor tableDescriptor = admin.getTable(flussTablePath).get();
-
-            // Convert Fluss table descriptor to SeaTunnel CatalogTable
-            CatalogTable catalogTable = FlussTypeConverter.toSeaTunnelTable(tableDescriptor);
-
-            // Update cache
-            if (metadataCacheTtl > 0) {
-                tableMetadataCache.put(normalizedPath, catalogTable);
-                tableCacheTimestamps.put(normalizedPath, System.currentTimeMillis());
-            }
-
-            log.debug("Retrieved table metadata for '{}': {}", normalizedPath, catalogTable.getTableId());
+            TableInfo tableInfo = admin.getTableInfo(flussTablePath).get();
+            CatalogTable catalogTable = FlussTypeConverter.toSeaTunnelTable(tableInfo);
+            log.debug(
+                    "Retrieved table metadata for '{}': {}", tablePath, catalogTable.getTableId());
             return catalogTable;
 
         } catch (TableNotExistException e) {
             throw e;
         } catch (Exception e) {
-            throw new CatalogException(
-                    String.format("Failed to get table metadata for '%s'", tablePath), e);
+            Throwable t = ExceptionUtils.stripExecutionException(e);
+            if (isTableNotExist(t)) {
+                throw new TableNotExistException(name(), tablePath);
+            } else {
+                throw new CatalogException(
+                        String.format("Failed to get table %s in %s", tablePath, name()), t);
+            }
         }
     }
 
     // Helper methods
-    
-    private String normalizeName(String name) {
-        return caseSensitive ? name : name.toLowerCase();
+
+    private com.alibaba.fluss.metadata.TablePath toFlussTablePath(TablePath tablePath) {
+        return com.alibaba.fluss.metadata.TablePath.of(
+                tablePath.getDatabaseName(), tablePath.getTableName());
     }
-    
-    private TablePath normalizeTablePath(TablePath tablePath) {
-        return TablePath.of(
-                normalizeName(tablePath.getDatabaseName()),
-                normalizeName(tablePath.getTableName()));
+
+    private boolean isDatabaseNotExist(Throwable t) {
+        return t instanceof com.alibaba.fluss.exception.DatabaseNotExistException;
     }
-    
-    private boolean isCacheValid(@Nullable Long timestamp) {
-        if (metadataCacheTtl <= 0 || timestamp == null) {
-            return false;
-        }
-        return System.currentTimeMillis() - timestamp < metadataCacheTtl;
+
+    private boolean isTableNotExist(Throwable t) {
+        return t instanceof com.alibaba.fluss.exception.TableNotExistException;
     }
 
     // Unsupported operations (for now)
-    
+
     @Override
     public void createTable(TablePath tablePath, CatalogTable table, boolean ignoreIfExists)
             throws TableAlreadyExistException, DatabaseNotExistException, CatalogException {

@@ -24,7 +24,6 @@ import org.apache.seatunnel.connectors.seatunnel.fluss.client.FlussConnectionMan
 import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorException;
-import org.apache.seatunnel.connectors.seatunnel.fluss.util.FlussTypeConverter;
 
 import com.alibaba.fluss.client.table.Table;
 import com.alibaba.fluss.client.table.writer.AppendWriter;

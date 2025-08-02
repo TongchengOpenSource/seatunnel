@@ -27,7 +27,6 @@ import org.apache.seatunnel.connectors.seatunnel.fluss.config.FlussSourceConfig;
 import org.apache.seatunnel.connectors.seatunnel.fluss.config.StartupMode;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.fluss.exception.FlussConnectorException;
-import org.apache.seatunnel.connectors.seatunnel.fluss.util.FlussTypeConverter;
 
 import com.alibaba.fluss.client.admin.Admin;
 import com.alibaba.fluss.client.admin.ListOffsetsResult;
@@ -62,8 +61,7 @@ public class FlussSourceReader implements SourceReader<SeaTunnelRow, FlussSource
     private FlussConnectionManager connectionManager;
     private Table flussTable;
     private LogScanner logScanner;
-    private TablePath tablePath;
-    ;
+    private TablePath tablePath;;
 
     private volatile boolean isRunning = true;
 
@@ -110,11 +108,6 @@ public class FlussSourceReader implements SourceReader<SeaTunnelRow, FlussSource
 
     @Override
     public void pollNext(Collector<SeaTunnelRow> output) throws Exception {
-        if (logScanner == null) {
-            Thread.sleep(sourceConfig.getPollTimeoutMs());
-            return;
-        }
-
         try {
             ScanRecords scanRecords =
                     logScanner.poll(Duration.ofMillis(sourceConfig.getPollTimeoutMs()));
@@ -189,7 +182,6 @@ public class FlussSourceReader implements SourceReader<SeaTunnelRow, FlussSource
                 "Successfully initialized Fluss client for table {}",
                 sourceConfig.getFullTableName());
     }
-
 
     private void subscribeToSplitsWithOffsets(List<FlussSourceSplit> splits) {
         try {

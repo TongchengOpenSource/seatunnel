@@ -32,20 +32,21 @@ import java.util.regex.Pattern;
 
 /**
  * Utility class for working with {@link OffsetsInitializer} instances.
- * 
+ *
  * <p>This class provides helper methods for:
+ *
  * <ul>
- *   <li>Parsing timestamp strings in various formats</li>
- *   <li>Validating offset initialization parameters</li>
- *   <li>Converting between different timestamp representations</li>
+ *   <li>Parsing timestamp strings in various formats
+ *   <li>Validating offset initialization parameters
+ *   <li>Converting between different timestamp representations
  * </ul>
  */
 @Slf4j
 public final class OffsetsInitializerUtils {
 
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER = 
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    
+
     private static final Pattern NUMERIC_TIMESTAMP_PATTERN = Pattern.compile("^\\d+$");
 
     private OffsetsInitializerUtils() {
@@ -54,9 +55,10 @@ public final class OffsetsInitializerUtils {
 
     /**
      * Parse a timestamp string that can be either:
+     *
      * <ul>
-     *   <li>A numeric timestamp in milliseconds (e.g., "1678883047356")</li>
-     *   <li>A formatted timestamp string (e.g., "2023-12-09 23:09:12")</li>
+     *   <li>A numeric timestamp in milliseconds (e.g., "1678883047356")
+     *   <li>A formatted timestamp string (e.g., "2023-12-09 23:09:12")
      * </ul>
      *
      * @param timestampStr the timestamp string to parse
@@ -80,8 +82,7 @@ public final class OffsetsInitializerUtils {
                 }
                 return timestamp;
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException(
-                        "Invalid numeric timestamp: " + trimmed, e);
+                throw new IllegalArgumentException("Invalid numeric timestamp: " + trimmed, e);
             }
         }
 
@@ -91,8 +92,10 @@ public final class OffsetsInitializerUtils {
             return dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException(
-                    "Invalid timestamp format. Expected either numeric timestamp (milliseconds) " +
-                    "or 'yyyy-MM-dd HH:mm:ss' format, got: " + trimmed, e);
+                    "Invalid timestamp format. Expected either numeric timestamp (milliseconds) "
+                            + "or 'yyyy-MM-dd HH:mm:ss' format, got: "
+                            + trimmed,
+                    e);
         }
     }
 
@@ -130,8 +133,10 @@ public final class OffsetsInitializerUtils {
             case LATEST:
             case FULL:
                 if (timestamp != null) {
-                    log.warn("Timestamp {} provided for startup mode {} will be ignored", 
-                            timestamp, startupMode);
+                    log.warn(
+                            "Timestamp {} provided for startup mode {} will be ignored",
+                            timestamp,
+                            startupMode);
                 }
                 break;
             default:
@@ -149,7 +154,7 @@ public final class OffsetsInitializerUtils {
      */
     public static OffsetsInitializer createFromModeAndTimestamp(
             StartupMode startupMode, @Nullable String timestampStr) {
-        
+
         Long timestamp = null;
         if (timestampStr != null && !timestampStr.trim().isEmpty()) {
             timestamp = parseTimestamp(timestampStr);

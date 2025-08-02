@@ -29,8 +29,8 @@ import java.util.Map;
 /**
  * Configuration for Fluss source connector, simplified following the official Fluss design pattern.
  *
- * <p>This configuration only holds essential source-specific settings. Other configurations
- * are handled through the fluss.config map to maintain compatibility with Fluss core.
+ * <p>This configuration only holds essential source-specific settings. Other configurations are
+ * handled through the fluss.config map to maintain compatibility with Fluss core.
  */
 @Data
 public class FlussSourceConfig implements Serializable {
@@ -46,17 +46,14 @@ public class FlussSourceConfig implements Serializable {
     private Map<String, Object> flussProperties;
 
     public FlussSourceConfig(ReadonlyConfig config) {
-        // Validate configuration first
         FlussConnectorOptionsUtils.validateSourceOptions(config);
-
-        // Extract core configuration
         this.bootstrapServers = config.get(FlussOptions.BOOTSTRAP_SERVERS);
         this.database = config.get(FlussOptions.DATABASE);
         this.table = config.get(FlussOptions.TABLE);
         this.scanStartupMode = config.get(FlussSourceOptions.SCAN_STARTUP_MODE);
-        this.scanStartupTimestamp = config.getOptional(FlussSourceOptions.SCAN_STARTUP_TIMESTAMP).orElse(null);
+        this.scanStartupTimestamp =
+                config.getOptional(FlussSourceOptions.SCAN_STARTUP_TIMESTAMP).orElse(null);
 
-        // Get startup options with OffsetsInitializer
         ZoneId timeZone = FlussConnectorOptionsUtils.getLocalTimeZone(null);
         FlussConnectorOptionsUtils.StartupOptions startupOptions =
                 FlussConnectorOptionsUtils.getStartupOptions(config, timeZone);

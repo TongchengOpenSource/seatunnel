@@ -26,12 +26,13 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * An implementation of {@link OffsetsInitializer} that initializes the offsets based on a timestamp.
- * 
- * <p>This initializer will start reading from the first record batch whose commit timestamp is greater
- * than or equal to the specified timestamp. This is useful for scenarios where you want to replay
- * data from a specific point in time.
- * 
+ * An implementation of {@link OffsetsInitializer} that initializes the offsets based on a
+ * timestamp.
+ *
+ * <p>This initializer will start reading from the first record batch whose commit timestamp is
+ * greater than or equal to the specified timestamp. This is useful for scenarios where you want to
+ * replay data from a specific point in time.
+ *
  * <p>Package private and should be instantiated via {@link OffsetsInitializer#timestamp(long)}.
  */
 class TimestampOffsetsInitializer implements OffsetsInitializer {
@@ -48,8 +49,7 @@ class TimestampOffsetsInitializer implements OffsetsInitializer {
      */
     TimestampOffsetsInitializer(long timestamp) {
         if (timestamp <= 0) {
-            throw new IllegalArgumentException(
-                    "Timestamp must be positive, got: " + timestamp);
+            throw new IllegalArgumentException("Timestamp must be positive, got: " + timestamp);
         }
         this.timestamp = timestamp;
     }
@@ -59,7 +59,7 @@ class TimestampOffsetsInitializer implements OffsetsInitializer {
             @Nullable String partitionName,
             Collection<Integer> buckets,
             BucketOffsetsRetriever bucketOffsetsRetriever) {
-        
+
         return bucketOffsetsRetriever.offsetsFromTimestamp(partitionName, buckets, timestamp);
     }
 

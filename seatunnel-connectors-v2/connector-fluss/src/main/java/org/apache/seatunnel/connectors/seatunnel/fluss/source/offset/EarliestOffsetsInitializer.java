@@ -26,11 +26,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * An implementation of {@link OffsetsInitializer} that initializes the buckets to the earliest offsets.
- * 
- * <p>This initializer will start reading from the earliest available offset in each bucket,
- * which means reading all available data from the beginning of the log.
- * 
+ * An implementation of {@link OffsetsInitializer} that initializes the buckets to the earliest
+ * offsets.
+ *
+ * <p>This initializer will start reading from the earliest available offset in each bucket, which
+ * means reading all available data from the beginning of the log.
+ *
  * <p>Package private and should be instantiated via {@link OffsetsInitializer#earliest()}.
  */
 class EarliestOffsetsInitializer implements OffsetsInitializer {
@@ -38,8 +39,8 @@ class EarliestOffsetsInitializer implements OffsetsInitializer {
     private static final long serialVersionUID = 1L;
 
     /**
-     * Special offset value indicating the earliest available offset.
-     * This follows the same convention as Kafka's EARLIEST_OFFSET.
+     * Special offset value indicating the earliest available offset. This follows the same
+     * convention as Kafka's EARLIEST_OFFSET.
      */
     public static final long EARLIEST_OFFSET = -2L;
 
@@ -48,7 +49,7 @@ class EarliestOffsetsInitializer implements OffsetsInitializer {
             @Nullable String partitionName,
             Collection<Integer> buckets,
             BucketOffsetsRetriever bucketOffsetsRetriever) {
-        
+
         Map<Integer, Long> initialOffsets = new HashMap<>();
         for (Integer bucket : buckets) {
             initialOffsets.put(bucket, EARLIEST_OFFSET);

@@ -28,11 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-/**
- * Unit tests for {@link FlussConnectorOptionsUtils}.
- */
+static
+/** Unit tests for {@link FlussConnectorOptionsUtils}. */
 class FlussConnectorOptionsUtilsTest {
 
     @Test
@@ -42,9 +39,9 @@ class FlussConnectorOptionsUtilsTest {
         configMap.put("database", "test_db");
         configMap.put("table", "test_table");
         configMap.put("scan.startup.mode", "earliest");
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
+
         // Should not throw exception
         assertDoesNotThrow(() -> FlussConnectorOptionsUtils.validateSourceOptions(config));
     }
@@ -57,9 +54,9 @@ class FlussConnectorOptionsUtilsTest {
         configMap.put("table", "test_table");
         configMap.put("scan.startup.mode", "timestamp");
         configMap.put("scan.startup.timestamp", "2023-03-15 10:30:47");
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
+
         // Should not throw exception
         assertDoesNotThrow(() -> FlussConnectorOptionsUtils.validateSourceOptions(config));
     }
@@ -72,10 +69,11 @@ class FlussConnectorOptionsUtilsTest {
         configMap.put("table", "test_table");
         configMap.put("scan.startup.mode", "timestamp");
         // Missing scan.startup.timestamp
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
-        assertThrows(FlussConnectorException.class, 
+
+        assertThrows(
+                FlussConnectorException.class,
                 () -> FlussConnectorOptionsUtils.validateSourceOptions(config));
     }
 
@@ -84,10 +82,11 @@ class FlussConnectorOptionsUtilsTest {
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("bootstrap.servers", "localhost:9092");
         // Missing database and table
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
-        assertThrows(FlussConnectorException.class, 
+
+        assertThrows(
+                FlussConnectorException.class,
                 () -> FlussConnectorOptionsUtils.validateSourceOptions(config));
     }
 
@@ -98,13 +97,13 @@ class FlussConnectorOptionsUtilsTest {
         configMap.put("database", "test_db");
         configMap.put("table", "test_table");
         configMap.put("scan.startup.mode", "earliest");
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
         ZoneId timeZone = ZoneId.systemDefault();
-        
-        FlussConnectorOptionsUtils.StartupOptions options = 
+
+        FlussConnectorOptionsUtils.StartupOptions options =
                 FlussConnectorOptionsUtils.getStartupOptions(config, timeZone);
-        
+
         assertEquals(StartupMode.EARLIEST, options.startupMode);
         assertNotNull(options.offsetsInitializer);
         assertEquals(StartupMode.EARLIEST, options.offsetsInitializer.getStartupMode());
@@ -118,13 +117,13 @@ class FlussConnectorOptionsUtilsTest {
         configMap.put("table", "test_table");
         configMap.put("scan.startup.mode", "timestamp");
         configMap.put("scan.startup.timestamp", "1678883047356");
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
         ZoneId timeZone = ZoneId.systemDefault();
-        
-        FlussConnectorOptionsUtils.StartupOptions options = 
+
+        FlussConnectorOptionsUtils.StartupOptions options =
                 FlussConnectorOptionsUtils.getStartupOptions(config, timeZone);
-        
+
         assertEquals(StartupMode.TIMESTAMP, options.startupMode);
         assertEquals(1678883047356L, options.startupTimestampMs);
         assertNotNull(options.offsetsInitializer);
@@ -136,11 +135,11 @@ class FlussConnectorOptionsUtilsTest {
     void testGetBucketKeys() {
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("bucket.key", "user_id,region,category");
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
+
         List<String> bucketKeys = FlussConnectorOptionsUtils.getBucketKeys(config);
-        
+
         assertEquals(Arrays.asList("user_id", "region", "category"), bucketKeys);
     }
 
@@ -148,11 +147,11 @@ class FlussConnectorOptionsUtilsTest {
     void testGetBucketKeysEmpty() {
         Map<String, Object> configMap = new HashMap<>();
         // No bucket.key configured
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
+
         List<String> bucketKeys = FlussConnectorOptionsUtils.getBucketKeys(config);
-        
+
         assertTrue(bucketKeys.isEmpty());
     }
 
@@ -165,16 +164,16 @@ class FlussConnectorOptionsUtilsTest {
         configMap.put("lookup.async", true);
         configMap.put("sink.ignore-delete", false);
         configMap.put("sink.bucket-shuffle", true);
-        
+
         Map<String, String> flussConfig = new HashMap<>();
         flussConfig.put("client.id", "test-client");
         flussConfig.put("connection.timeout.ms", "30000");
         configMap.put("fluss.config", flussConfig);
-        
+
         ReadonlyConfig config = ReadonlyConfig.fromMap(configMap);
-        
+
         Map<String, Object> properties = FlussConnectorOptionsUtils.buildFlussProperties(config);
-        
+
         assertEquals("localhost:9092", properties.get("bootstrap.servers"));
         assertEquals(16, properties.get("bucket.num"));
         assertEquals("user_id", properties.get("bucket.key"));
@@ -202,11 +201,13 @@ class FlussConnectorOptionsUtilsTest {
     @Test
     void testParseTimestampInvalid() {
         ZoneId timeZone = ZoneId.systemDefault();
-        
-        assertThrows(FlussConnectorException.class, 
+
+        assertThrows(
+                FlussConnectorException.class,
                 () -> FlussConnectorOptionsUtils.parseTimestamp("invalid-timestamp", timeZone));
-        
-        assertThrows(FlussConnectorException.class, 
+
+        assertThrows(
+                FlussConnectorException.class,
                 () -> FlussConnectorOptionsUtils.parseTimestamp("2023-13-45 25:70:80", timeZone));
     }
 
@@ -214,7 +215,7 @@ class FlussConnectorOptionsUtilsTest {
     void testGetLocalTimeZone() {
         ZoneId defaultZone = FlussConnectorOptionsUtils.getLocalTimeZone(null);
         assertEquals(ZoneId.systemDefault(), defaultZone);
-        
+
         ZoneId utcZone = FlussConnectorOptionsUtils.getLocalTimeZone("UTC");
         assertEquals(ZoneId.of("UTC"), utcZone);
     }

@@ -23,9 +23,9 @@ import org.apache.seatunnel.api.configuration.Options;
 /**
  * Source-specific options for Fluss connector, following the official Fluss design pattern.
  *
- * <p>This class only defines source-specific options that are not covered by the core
- * Fluss configuration. Performance and client-related options should be configured
- * through the fluss.config map.
+ * <p>This class only defines source-specific options that are not covered by the core Fluss
+ * configuration. Performance and client-related options should be configured through the
+ * fluss.config map.
  */
 public class FlussSourceOptions extends FlussOptions {
 

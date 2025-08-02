@@ -27,8 +27,8 @@ import java.util.Map;
 /**
  * Configuration for Fluss sink connector, simplified following the official Fluss design pattern.
  *
- * <p>This configuration only holds essential sink-specific settings. Other configurations
- * are handled through the fluss.config map to maintain compatibility with Fluss core.
+ * <p>This configuration only holds essential sink-specific settings. Other configurations are
+ * handled through the fluss.config map to maintain compatibility with Fluss core.
  */
 @Data
 public class FlussSinkConfig implements Serializable {

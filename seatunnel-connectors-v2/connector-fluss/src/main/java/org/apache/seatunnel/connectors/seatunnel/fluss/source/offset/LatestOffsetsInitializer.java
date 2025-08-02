@@ -25,11 +25,12 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * An implementation of {@link OffsetsInitializer} that initializes the buckets to the latest offsets.
- * 
- * <p>This initializer will start reading from the latest available offset in each bucket,
- * which means only reading new data that arrives after the source starts.
- * 
+ * An implementation of {@link OffsetsInitializer} that initializes the buckets to the latest
+ * offsets.
+ *
+ * <p>This initializer will start reading from the latest available offset in each bucket, which
+ * means only reading new data that arrives after the source starts.
+ *
  * <p>Package private and should be instantiated via {@link OffsetsInitializer#latest()}.
  */
 class LatestOffsetsInitializer implements OffsetsInitializer {
@@ -41,7 +42,7 @@ class LatestOffsetsInitializer implements OffsetsInitializer {
             @Nullable String partitionName,
             Collection<Integer> buckets,
             BucketOffsetsRetriever bucketOffsetsRetriever) {
-        
+
         return bucketOffsetsRetriever.latestOffsets(partitionName, buckets);
     }
 

@@ -61,15 +61,10 @@ public class FlussSource
 
     @Override
     public Boundedness getBoundedness() {
-        // Determine boundedness based on job mode and configuration
         if (jobContext != null && JobMode.BATCH.equals(jobContext.getJobMode())) {
             return Boundedness.BOUNDED;
         }
-        if (sourceConfig.getEnableChangelog()) {
-            return Boundedness.UNBOUNDED;
-        }
-
-        return Boundedness.BOUNDED;
+        return Boundedness.UNBOUNDED;
     }
 
     @Override

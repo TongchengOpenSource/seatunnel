@@ -25,18 +25,21 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * An implementation of {@link OffsetsInitializer} that performs a full snapshot on the table
- * upon first startup, and continues to read the changelog.
- * 
+ * An implementation of {@link OffsetsInitializer} that performs a full snapshot on the table upon
+ * first startup, and continues to read the changelog.
+ *
  * <p>The behavior depends on the table type:
+ *
  * <ul>
- *   <li>For log tables: equivalent to {@link EarliestOffsetsInitializer}, reading from the earliest offset</li>
- *   <li>For primary key tables: reads the latest snapshot which materializes all changes on the table</li>
+ *   <li>For log tables: equivalent to {@link EarliestOffsetsInitializer}, reading from the earliest
+ *       offset
+ *   <li>For primary key tables: reads the latest snapshot which materializes all changes on the
+ *       table
  * </ul>
- * 
+ *
  * <p>This mode is useful when you want to get a complete view of the data, including both
  * historical data and ongoing changes.
- * 
+ *
  * <p>Package private and should be instantiated via {@link OffsetsInitializer#full()}.
  */
 class FullOffsetsInitializer implements OffsetsInitializer {
@@ -48,7 +51,7 @@ class FullOffsetsInitializer implements OffsetsInitializer {
             @Nullable String partitionName,
             Collection<Integer> buckets,
             BucketOffsetsRetriever bucketOffsetsRetriever) {
-        
+
         // For full mode, we try to get snapshot offsets first.
         // If snapshot offsets are not available (e.g., for log tables),
         // fall back to earliest offsets.

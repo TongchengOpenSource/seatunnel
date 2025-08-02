@@ -28,13 +28,13 @@ import com.google.auto.service.AutoService;
 
 /**
  * Factory for creating {@link FlussCatalog} instances.
- * 
- * <p>This factory is responsible for creating Fluss catalog instances based on
- * the provided configuration. It validates the required options and creates
- * the catalog with the appropriate settings.
- * 
- * <p>The factory is automatically discovered by SeaTunnel through the
- * {@link AutoService} annotation.
+ *
+ * <p>This factory is responsible for creating Fluss catalog instances based on the provided
+ * configuration. It validates the required options and creates the catalog with the appropriate
+ * settings.
+ *
+ * <p>The factory is automatically discovered by SeaTunnel through the {@link AutoService}
+ * annotation.
  */
 @AutoService(Factory.class)
 public class FlussCatalogFactory implements CatalogFactory {
@@ -50,21 +50,7 @@ public class FlussCatalogFactory implements CatalogFactory {
     public OptionRule optionRule() {
         return OptionRule.builder()
                 .required(FlussOptions.BOOTSTRAP_SERVERS)
-                .optional(
-                        FlussOptions.DATABASE,
-                        FlussOptions.TABLE,
-                        FlussOptions.BUCKET_NUMBER,
-                        FlussOptions.BUCKET_KEY,
-                        FlussOptions.SCAN_PARTITION_DISCOVERY_INTERVAL,
-                        FlussOptions.LOOKUP_ASYNC,
-                        FlussOptions.SINK_IGNORE_DELETE,
-                        FlussOptions.SINK_BUCKET_SHUFFLE,
-                        FlussOptions.FLUSS_CONFIG,
-                        FlussCatalogOptions.DEFAULT_DATABASE,
-                        FlussCatalogOptions.CASE_SENSITIVE,
-                        FlussCatalogOptions.CONNECTION_POOL_SIZE,
-                        FlussCatalogOptions.METADATA_CACHE_TTL_MS,
-                        FlussCatalogOptions.METADATA_CACHE_SIZE)
+                .optional(FlussCatalogOptions.DEFAULT_DATABASE)
                 .build();
     }
 

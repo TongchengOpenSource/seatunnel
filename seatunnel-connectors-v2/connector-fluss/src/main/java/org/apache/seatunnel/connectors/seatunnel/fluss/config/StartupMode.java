@@ -31,8 +31,8 @@ public enum StartupMode {
 
     /**
      * Perform a full snapshot on the table upon first startup, and continue to read the changelog.
-     * For log tables: equivalent to EARLIEST, reading from the earliest offset.
-     * For primary key tables: reads the latest snapshot which materializes all changes on the table.
+     * For log tables: equivalent to EARLIEST, reading from the earliest offset. For primary key
+     * tables: reads the latest snapshot which materializes all changes on the table.
      */
     FULL("full");
 

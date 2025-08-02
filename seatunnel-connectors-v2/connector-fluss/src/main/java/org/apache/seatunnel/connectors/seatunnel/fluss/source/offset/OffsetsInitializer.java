@@ -27,26 +27,28 @@ import java.util.Map;
 
 /**
  * An interface for users to specify the starting offset of Fluss source splits.
- * 
+ *
  * <p>This interface provides a flexible way to initialize offsets for different scenarios:
+ *
  * <ul>
- *   <li>Reading from earliest available offsets</li>
- *   <li>Reading from latest offsets</li>
- *   <li>Reading from a specific timestamp</li>
- *   <li>Performing a full snapshot then reading changelog</li>
+ *   <li>Reading from earliest available offsets
+ *   <li>Reading from latest offsets
+ *   <li>Reading from a specific timestamp
+ *   <li>Performing a full snapshot then reading changelog
  * </ul>
- * 
+ *
  * <p>Example usage:
+ *
  * <pre>{@code
  * // Start from earliest
  * OffsetsInitializer earliest = OffsetsInitializer.earliest();
- * 
+ *
  * // Start from latest
  * OffsetsInitializer latest = OffsetsInitializer.latest();
- * 
+ *
  * // Start from timestamp
  * OffsetsInitializer timestamp = OffsetsInitializer.timestamp(1678883047356L);
- * 
+ *
  * // Full snapshot then changelog
  * OffsetsInitializer full = OffsetsInitializer.full();
  * }</pre>
@@ -57,7 +59,8 @@ public interface OffsetsInitializer extends Serializable {
      * Get the initial offsets for the given Fluss buckets. These offsets will be used as starting
      * offsets of the Fluss buckets.
      *
-     * @param partitionName the partition name of the buckets if they are partitioned. Otherwise, null.
+     * @param partitionName the partition name of the buckets if they are partitioned. Otherwise,
+     *     null.
      * @param buckets the Fluss buckets to get the starting offsets.
      * @param bucketOffsetsRetriever a helper to retrieve information of the Fluss buckets.
      * @return A mapping from Fluss bucket to their offsets to start scanning from.
@@ -79,15 +82,14 @@ public interface OffsetsInitializer extends Serializable {
      *
      * @return the timestamp in milliseconds, or null if not applicable
      */
-    @Nullable
-    Long getTimestamp();
+    @Nullable Long getTimestamp();
 
     /**
      * An interface that provides necessary information to the {@link OffsetsInitializer} to get the
      * initial offsets of the Fluss buckets.
      */
     interface BucketOffsetsRetriever {
-        
+
         /**
          * Get the latest offsets for the specified buckets.
          *
@@ -136,14 +138,16 @@ public interface OffsetsInitializer extends Serializable {
      * Get an {@link OffsetsInitializer} which initializes the offsets to the earliest available
      * offsets of each bucket.
      *
-     * @return an {@link OffsetsInitializer} which initializes the offsets to the earliest available offsets.
+     * @return an {@link OffsetsInitializer} which initializes the offsets to the earliest available
+     *     offsets.
      */
     static OffsetsInitializer earliest() {
         return new EarliestOffsetsInitializer();
     }
 
     /**
-     * Get an {@link OffsetsInitializer} which initializes the offsets to the latest offsets of each bucket.
+     * Get an {@link OffsetsInitializer} which initializes the offsets to the latest offsets of each
+     * bucket.
      *
      * @return an {@link OffsetsInitializer} which initializes the offsets to the latest offsets.
      */
@@ -172,7 +176,8 @@ public interface OffsetsInitializer extends Serializable {
      * than or equals the given timestamp (milliseconds).
      *
      * @param timestamp the timestamp (milliseconds) to start the scan.
-     * @return an {@link OffsetsInitializer} which initializes the offsets based on the given timestamp.
+     * @return an {@link OffsetsInitializer} which initializes the offsets based on the given
+     *     timestamp.
      */
     static OffsetsInitializer timestamp(long timestamp) {
         return new TimestampOffsetsInitializer(timestamp);
@@ -184,7 +189,8 @@ public interface OffsetsInitializer extends Serializable {
      * @param startupMode the startup mode
      * @param timestamp the timestamp for timestamp mode, can be null for other modes
      * @return the appropriate OffsetsInitializer
-     * @throws IllegalArgumentException if timestamp is required but not provided, or if timestamp is invalid
+     * @throws IllegalArgumentException if timestamp is required but not provided, or if timestamp
+     *     is invalid
      */
     static OffsetsInitializer fromStartupMode(StartupMode startupMode, @Nullable Long timestamp) {
         switch (startupMode) {

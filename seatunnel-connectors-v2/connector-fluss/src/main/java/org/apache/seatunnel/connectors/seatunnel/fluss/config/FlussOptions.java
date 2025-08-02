@@ -26,9 +26,9 @@ import java.util.Map;
 /**
  * Core Fluss connector options following the official Fluss design pattern.
  *
- * <p>This class only defines connector-specific options. Table and client options
- * are handled through the fluss.config map to avoid duplication and maintain
- * compatibility with Fluss core configurations.
+ * <p>This class only defines connector-specific options. Table and client options are handled
+ * through the fluss.config map to avoid duplication and maintain compatibility with Fluss core
+ * configurations.
  */
 public class FlussOptions {
 
@@ -53,10 +53,7 @@ public class FlussOptions {
                     .withDescription("Fluss database name");
 
     public static final Option<String> TABLE =
-            Options.key("table")
-                    .stringType()
-                    .noDefaultValue()
-                    .withDescription("Fluss table name");
+            Options.key("table").stringType().noDefaultValue().withDescription("Fluss table name");
 
     // ----------------------------------------------------------------------------------------
     // Bucket distribution options
