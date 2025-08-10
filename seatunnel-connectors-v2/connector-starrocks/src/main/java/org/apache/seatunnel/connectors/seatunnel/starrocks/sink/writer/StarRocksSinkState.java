@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer;
+package org.apache.seatunnel.connectors.seatunnel.starrocks.sink.writer;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -28,20 +28,13 @@ import java.io.Serializable;
 @Getter
 @ToString
 @EqualsAndHashCode
-/** StarRocks commit info for transaction stream load */
-public class StarRocksCommitInfo implements Serializable {
+public class StarRocksSinkState implements Serializable {
+    private static final long serialVersionUID = 8154853734116737277L;
+    private final String labelPrefix;
+    private final long checkpointId;
 
-    private static final long serialVersionUID = 1L;
-
-    private String hostPort;
-    private String label;
-    private String db;
-    private long txnId;
-
-    public StarRocksCommitInfo(String hostPort, String label, String db, long txnId) {
-        this.hostPort = hostPort;
-        this.db = db;
-        this.label = label;
-        this.txnId = txnId;
+    public StarRocksSinkState(String labelPrefix, long checkpointId) {
+        this.labelPrefix = labelPrefix;
+        this.checkpointId = checkpointId;
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer;
+package org.apache.seatunnel.connectors.seatunnel.starrocks.sink.writer;
 
 import org.apache.seatunnel.api.serialization.Serializer;
 
@@ -25,32 +25,26 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-/** Serializer for StarRocks commit info */
-public class StarRocksCommitInfoSerializer implements Serializer<StarRocksCommitInfo> {
-
+/** Serializer for StarRocksSinkState. */
+public class StarRocksSinkStateSerializer implements Serializer<StarRocksSinkState> {
     @Override
-    public byte[] serialize(StarRocksCommitInfo commitInfo) throws IOException {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                DataOutputStream dos = new DataOutputStream(baos)) {
-
-            dos.writeUTF(commitInfo.getHostPort());
-            dos.writeUTF(commitInfo.getDb());
-            dos.writeUTF(commitInfo.getLabel());
-            dos.writeLong(commitInfo.getTxnId());
-
+    public byte[] serialize(StarRocksSinkState starRocksSinkState) throws IOException {
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                final DataOutputStream out = new DataOutputStream(baos)) {
+            out.writeUTF(starRocksSinkState.getLabelPrefix());
+            out.writeLong(starRocksSinkState.getCheckpointId());
+            out.flush();
             return baos.toByteArray();
         }
     }
 
     @Override
-    public StarRocksCommitInfo deserialize(byte[] serialized) throws IOException {
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(serialized);
-                DataInputStream dis = new DataInputStream(bais)) {
-            String hostPort = dis.readUTF();
-            String db = dis.readUTF();
-            String label = dis.readUTF();
-            long txnId = dis.readLong();
-            return new StarRocksCommitInfo(hostPort, label, db, txnId);
+    public StarRocksSinkState deserialize(byte[] serialized) throws IOException {
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(serialized);
+                final DataInputStream in = new DataInputStream(bais)) {
+            final String labelPrefix = in.readUTF();
+            final long checkpointId = in.readLong();
+            return new StarRocksSinkState(labelPrefix, checkpointId);
         }
     }
 }

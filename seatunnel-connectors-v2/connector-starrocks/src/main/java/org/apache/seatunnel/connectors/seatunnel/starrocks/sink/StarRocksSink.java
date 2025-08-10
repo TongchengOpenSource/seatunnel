@@ -17,6 +17,7 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.sink;
 
+import org.apache.seatunnel.api.common.JobContext;
 import org.apache.seatunnel.api.serialization.Serializer;
 import org.apache.seatunnel.api.sink.DataSaveMode;
 import org.apache.seatunnel.api.sink.DefaultSaveModeHandler;
@@ -41,14 +42,18 @@ import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksBaseO
 import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitInfo;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitInfoSerializer;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitter;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.writer.StarRocksSinkState;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.writer.StarRocksSinkStateSerializer;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 public class StarRocksSink
-        implements SeaTunnelSink<SeaTunnelRow, Void, StarRocksCommitInfo, StarRocksCommitInfo>,
+        implements SeaTunnelSink<
+                        SeaTunnelRow, StarRocksSinkState, StarRocksCommitInfo, StarRocksCommitInfo>,
                 SupportSaveMode,
                 SupportSchemaEvolutionSink,
                 SupportMultiTableSink {
@@ -58,6 +63,7 @@ public class StarRocksSink
     private final DataSaveMode dataSaveMode;
     private final SchemaSaveMode schemaSaveMode;
     private final CatalogTable catalogTable;
+    private String jobId;
 
     public StarRocksSink(SinkConfig sinkConfig, CatalogTable catalogTable) {
         this.sinkConfig = sinkConfig;
@@ -68,6 +74,11 @@ public class StarRocksSink
     }
 
     @Override
+    public void setJobContext(JobContext jobContext) {
+        this.jobId = jobContext.getJobId();
+    }
+
+    @Override
     public String getPluginName() {
         return StarRocksCatalogFactory.IDENTIFIER;
     }
@@ -75,18 +86,21 @@ public class StarRocksSink
     @Override
     public StarRocksSinkWriter createWriter(SinkWriter.Context context) {
         TablePath sinkTablePath = catalogTable.getTablePath();
-        return new StarRocksSinkWriter(sinkConfig, tableSchema, sinkTablePath);
+        return new StarRocksSinkWriter(
+                context, Collections.emptyList(), sinkConfig, tableSchema, sinkTablePath, jobId);
     }
 
     @Override
-    public SinkWriter<SeaTunnelRow, StarRocksCommitInfo, Void> restoreWriter(
-            SinkWriter.Context context, List<Void> states) throws IOException {
-        return createWriter(context);
+    public SinkWriter<SeaTunnelRow, StarRocksCommitInfo, StarRocksSinkState> restoreWriter(
+            SinkWriter.Context context, List<StarRocksSinkState> states) throws IOException {
+        TablePath sinkTablePath = catalogTable.getTablePath();
+        return new StarRocksSinkWriter(
+                context, states, sinkConfig, tableSchema, sinkTablePath, jobId);
     }
 
     @Override
-    public Optional<Serializer<Void>> getWriterStateSerializer() {
-        return Optional.empty();
+    public Optional<Serializer<StarRocksSinkState>> getWriterStateSerializer() {
+        return Optional.of(new StarRocksSinkStateSerializer());
     }
 
     @Override

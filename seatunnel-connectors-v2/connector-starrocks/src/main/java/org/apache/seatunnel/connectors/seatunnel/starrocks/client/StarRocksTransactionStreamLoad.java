@@ -158,7 +158,7 @@ public class StarRocksTransactionStreamLoad {
         if (!transactionStarted || txnId == null) {
             return null;
         }
-        return new StarRocksCommitInfo(hostPort, database, table, label, txnId);
+        return new StarRocksCommitInfo(hostPort, database, label, txnId);
     }
 
     /** Close resources */

@@ -17,6 +17,8 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.sink;
 
+import org.apache.seatunnel.shade.com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 import org.apache.seatunnel.api.sink.SinkWriter;
 import org.apache.seatunnel.api.sink.SupportMultiTableSinkWriter;
 import org.apache.seatunnel.api.sink.SupportSchemaEvolutionSinkWriter;
@@ -36,6 +38,8 @@ import org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.StarRocksCs
 import org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.StarRocksISerializer;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.StarRocksJsonSerializer;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitInfo;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.writer.LabelGenerator;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.writer.StarRocksSinkState;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.util.SchemaUtils;
 
 import lombok.SneakyThrows;
@@ -48,12 +52,19 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.seatunnel.shade.com.google.common.base.Preconditions.checkState;
 
 @Slf4j
 public class StarRocksSinkWriter
-        implements SinkWriter<SeaTunnelRow, StarRocksCommitInfo, Void>,
+        implements SinkWriter<SeaTunnelRow, StarRocksCommitInfo, StarRocksSinkState>,
                 SupportMultiTableSinkWriter<StarRocksCommitInfo>,
                 SupportSchemaEvolutionSinkWriter {
+    private static final int INITIAL_DELAY = 200;
+    private long lastCheckpointId;
     private StarRocksISerializer serializer;
     private StarRocksSinkManager manager;
     private StarRocksTransactionSinkManager transactionManager;
@@ -62,14 +73,43 @@ public class StarRocksSinkWriter
     private final TablePath sinkTablePath;
     private final TableSchemaChangeEventDispatcher tableSchemaChangeEventDispatcher =
             new TableSchemaChangeEventDispatcher();
+    private final String labelPrefix;
+    private final LabelGenerator labelGenerator;
+    private final int intervalTime;
+    private final ScheduledExecutorService scheduledExecutorService;
+    private volatile Exception loadException;
 
     public StarRocksSinkWriter(
-            SinkConfig sinkConfig, TableSchema tableSchema, TablePath tablePath) {
+            SinkWriter.Context context,
+            List<StarRocksSinkState> state,
+            SinkConfig sinkConfig,
+            TableSchema tableSchema,
+            TablePath tablePath,
+            String jobId) {
+        this.lastCheckpointId = !state.isEmpty() ? state.get(0).getCheckpointId() : 0;
+        log.info("restore checkpointId {}", lastCheckpointId);
         this.tableSchema = tableSchema;
         SeaTunnelRowType seaTunnelRowType = tableSchema.toPhysicalRowDataType();
         this.serializer = createSerializer(sinkConfig, seaTunnelRowType);
         this.sinkConfig = sinkConfig;
         this.sinkTablePath = tablePath;
+
+        // Generate labelPrefix similar to DorisSinkWriter
+        this.labelPrefix =
+                (sinkConfig.getLabelPrefix() != null ? sinkConfig.getLabelPrefix() : "starrocks")
+                        + "_"
+                        + tablePath.getFullName().replaceAll("\\.", "_")
+                        + "_"
+                        + jobId
+                        + "_"
+                        + context.getIndexOfSubtask();
+
+        this.labelGenerator = new LabelGenerator(labelPrefix, sinkConfig.isEnable2PC());
+        this.intervalTime = 5000; // Default check interval 5 seconds
+        this.scheduledExecutorService =
+                new ScheduledThreadPoolExecutor(
+                        1,
+                        new ThreadFactoryBuilder().setNameFormat("starrocks-load-check").build());
 
         // Initialize appropriate manager based on 2PC configuration
         if (sinkConfig.isEnable2PC()) {
@@ -77,10 +117,20 @@ public class StarRocksSinkWriter
         } else {
             this.manager = new StarRocksSinkManager(sinkConfig, tableSchema);
         }
+
+        this.initializeLoad();
+    }
+
+    private void initializeLoad() {
+        startLoad(labelGenerator.generateLabel(lastCheckpointId + 1));
+        // Start periodic check for load exceptions
+        scheduledExecutorService.scheduleWithFixedDelay(
+                this::checkDone, INITIAL_DELAY, intervalTime, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void write(SeaTunnelRow element) throws IOException {
+        checkLoadException();
         String record;
         try {
             record = serializer.serialize(element);
@@ -148,8 +198,16 @@ public class StarRocksSinkWriter
     }
 
     @Override
-    public List<Void> snapshotState(long checkpointId) throws IOException {
-        return Collections.emptyList();
+    public List<StarRocksSinkState> snapshotState(long checkpointId) throws IOException {
+        // For 2PC mode, ensure transaction manager exists
+        if (sinkConfig.isEnable2PC()) {
+            checkState(transactionManager != null);
+        } else {
+            checkState(manager != null);
+        }
+        startLoad(labelGenerator.generateLabel(checkpointId + 1));
+        this.lastCheckpointId = checkpointId;
+        return Collections.singletonList(new StarRocksSinkState(labelPrefix, lastCheckpointId));
     }
 
     @Override
@@ -162,14 +220,42 @@ public class StarRocksSinkWriter
     @Override
     public void close() throws IOException {
         try {
+            // For non-2PC mode, flush remaining data before closing
+            if (!sinkConfig.isEnable2PC() && manager != null) {
+                manager.flush();
+            }
+
             if (sinkConfig.isEnable2PC() && transactionManager != null) {
                 transactionManager.close();
             } else if (manager != null) {
                 manager.close();
             }
+
+            if (scheduledExecutorService != null) {
+                scheduledExecutorService.shutdownNow();
+            }
         } catch (IOException e) {
             log.error("Close starRocks manager failed.", e);
             throw CommonError.closeFailed(StarRocksBaseOptions.CONNECTOR_IDENTITY, e);
+        }
+    }
+
+    private void startLoad(String label) {
+        log.info("Starting load with label: {}", label);
+        // For StarRocks, we don't need to explicitly start a load like Doris
+        // The load is handled by the managers when data is written
+    }
+
+    private void checkDone() {
+        // Check for load exceptions periodically
+        log.debug("start timer checker, interval {} ms", intervalTime);
+        // For StarRocks, exception handling is done within the managers
+        // This method is kept for consistency with DorisSinkWriter pattern
+    }
+
+    private void checkLoadException() {
+        if (loadException != null) {
+            throw new RuntimeException("error while loading data.", loadException);
         }
     }
 

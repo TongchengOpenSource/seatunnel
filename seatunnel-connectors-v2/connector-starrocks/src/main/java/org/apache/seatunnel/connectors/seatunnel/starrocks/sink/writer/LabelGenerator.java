@@ -15,33 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer;
+package org.apache.seatunnel.connectors.seatunnel.starrocks.sink.writer;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+/** Generator label for stream load. */
+public class LabelGenerator {
+    private final String labelPrefix;
+    private final boolean enable2PC;
 
-import java.io.Serializable;
+    public LabelGenerator(String labelPrefix, boolean enable2PC) {
+        this.labelPrefix = labelPrefix;
+        this.enable2PC = enable2PC;
+    }
 
-@Setter
-@Getter
-@ToString
-@EqualsAndHashCode
-/** StarRocks commit info for transaction stream load */
-public class StarRocksCommitInfo implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    private String hostPort;
-    private String label;
-    private String db;
-    private long txnId;
-
-    public StarRocksCommitInfo(String hostPort, String label, String db, long txnId) {
-        this.hostPort = hostPort;
-        this.db = db;
-        this.label = label;
-        this.txnId = txnId;
+    public String generateLabel(long chkId) {
+        return enable2PC
+                ? labelPrefix + "_" + chkId
+                : labelPrefix + "_" + System.currentTimeMillis();
     }
 }
