@@ -75,10 +75,9 @@ public class StarRocksTransactionStreamLoadVisitor extends AbstractStreamLoadVis
         }
         loadData();
 
-        return true; // Transaction mode always returns true, actual result is determined at commit time
+        return true;
     }
 
-    /** Begin transaction */
     private void beginTransaction() throws IOException {
         if (transactionStarted) {
             return;
@@ -100,7 +99,6 @@ public class StarRocksTransactionStreamLoadVisitor extends AbstractStreamLoadVis
         log.info("Successfully started transaction for label: {}, txnId: {}", label, txnId);
     }
 
-    /** Write record to buffer */
     private void writeRecord(byte[] record) throws IOException {
         if (!transactionStarted) {
             beginTransaction();
@@ -109,7 +107,6 @@ public class StarRocksTransactionStreamLoadVisitor extends AbstractStreamLoadVis
         dataFormatter.writeRecord(record);
     }
 
-    /** Load data to StarRocks */
     private void loadData() throws IOException {
         if (!transactionStarted) {
             throw new StarRocksConnectorException(
@@ -140,7 +137,6 @@ public class StarRocksTransactionStreamLoadVisitor extends AbstractStreamLoadVis
 
         log.info("Successfully loaded data for label: {}, txnId: {}", label, txnId);
 
-        // Clear buffer after successful load
         dataBuffer.reset();
         dataFormatter.reset();
     }
@@ -156,7 +152,6 @@ public class StarRocksTransactionStreamLoadVisitor extends AbstractStreamLoadVis
         return null;
     }
 
-    /** Prepare commit transaction */
     private void prepareCommitTransaction() throws IOException {
         if (!transactionStarted) {
             throw new StarRocksConnectorException(
@@ -177,7 +172,6 @@ public class StarRocksTransactionStreamLoadVisitor extends AbstractStreamLoadVis
         log.info("Successfully prepared transaction for label: {}, txnId: {}", label, txnId);
     }
 
-    /** Get commit info for committer */
     private StarRocksCommitInfo getCommitInfo() {
         if (!transactionStarted || txnId == null) {
             return null;

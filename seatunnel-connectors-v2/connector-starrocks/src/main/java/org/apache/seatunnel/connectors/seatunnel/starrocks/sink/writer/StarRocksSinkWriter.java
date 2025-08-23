@@ -72,8 +72,7 @@ public class StarRocksSinkWriter
             List<StarRocksSinkState> state,
             SinkConfig sinkConfig,
             TableSchema tableSchema,
-            TablePath tablePath,
-            String jobId) {
+            TablePath tablePath) {
         this.lastCheckpointId = !state.isEmpty() ? state.get(0).getCheckpointId() : 0;
         log.info("restore checkpointId {}", lastCheckpointId);
         this.tableSchema = tableSchema;
@@ -81,16 +80,8 @@ public class StarRocksSinkWriter
         this.serializer = createSerializer(sinkConfig, seaTunnelRowType);
         this.sinkConfig = sinkConfig;
         this.sinkTablePath = tablePath;
-
-        this.labelPrefix =
-                (sinkConfig.getLabelPrefix() != null ? sinkConfig.getLabelPrefix() : "starrocks")
-                        + "_"
-                        + tablePath.getFullName().replaceAll("\\.", "_")
-                        + "_"
-                        + jobId
-                        + "_"
-                        + context.getIndexOfSubtask();
-
+        //todo
+        this.labelPrefix = "";
         this.labelGenerator = new LabelGenerator(labelPrefix, sinkConfig.isEnable2PC());
         this.manager = new StarRocksSinkManager(sinkConfig, tableSchema);
     }

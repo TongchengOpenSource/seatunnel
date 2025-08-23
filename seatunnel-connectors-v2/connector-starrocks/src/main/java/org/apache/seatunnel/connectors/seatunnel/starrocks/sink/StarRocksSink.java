@@ -88,7 +88,7 @@ public class StarRocksSink
     public StarRocksSinkWriter createWriter(SinkWriter.Context context) {
         TablePath sinkTablePath = catalogTable.getTablePath();
         return new StarRocksSinkWriter(
-                context, Collections.emptyList(), sinkConfig, tableSchema, sinkTablePath, jobId);
+                context, Collections.emptyList(), sinkConfig, tableSchema, sinkTablePath);
     }
 
     @Override
@@ -96,7 +96,7 @@ public class StarRocksSink
             SinkWriter.Context context, List<StarRocksSinkState> states) throws IOException {
         TablePath sinkTablePath = catalogTable.getTablePath();
         return new StarRocksSinkWriter(
-                context, states, sinkConfig, tableSchema, sinkTablePath, jobId);
+                context, states, sinkConfig, tableSchema, sinkTablePath);
     }
 
     @Override
