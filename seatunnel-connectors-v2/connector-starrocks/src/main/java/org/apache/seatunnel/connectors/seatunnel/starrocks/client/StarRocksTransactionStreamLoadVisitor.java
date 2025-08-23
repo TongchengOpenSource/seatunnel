@@ -17,6 +17,7 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.client;
 
+import org.apache.seatunnel.api.table.catalog.TableSchema;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
@@ -32,38 +33,53 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-/** StarRocks transaction stream load implementation */
+/** StarRocks transaction stream load visitor for 2PC mode */
 @Slf4j
-public class StarRocksTransactionStreamLoad {
+public class StarRocksTransactionStreamLoadVisitor extends AbstractStreamLoadVisitor {
 
     private static final String BEGIN_TXN_URL_PATTERN = "http://%s/api/transaction/begin";
     private static final String LOAD_URL_PATTERN = "http://%s/api/transaction/load";
     private static final String PREPARE_URL_PATTERN = "http://%s/api/transaction/prepare";
 
-    private final SinkConfig sinkConfig;
-    private final String hostPort;
-    private final String database;
-    private final String table;
-    private final String label;
-    private final ByteArrayOutputStream dataBuffer;
-    private final StarRocksHttpClient httpClient;
-    private final StarRocksDataFormatter dataFormatter;
+    private String hostPort;
+    private String database;
+    private String table;
+    private String label;
+    private ByteArrayOutputStream dataBuffer;
+    private StarRocksHttpClient httpClient;
+    private StarRocksDataFormatter dataFormatter;
 
     private Long txnId;
     private boolean transactionStarted = false;
 
-    public StarRocksTransactionStreamLoad(SinkConfig sinkConfig, String hostPort, String label) {
-        this.sinkConfig = sinkConfig;
-        this.hostPort = hostPort;
+    public StarRocksTransactionStreamLoadVisitor(SinkConfig sinkConfig, TableSchema tableSchema) {
+        super(sinkConfig, tableSchema);
         this.database = sinkConfig.getDatabase();
         this.table = sinkConfig.getTable();
-        this.label = label;
-        this.dataBuffer = new ByteArrayOutputStream();
         this.httpClient = new StarRocksHttpClient(sinkConfig);
-        this.dataFormatter = new StarRocksDataFormatter(sinkConfig, dataBuffer);
     }
 
-    public void beginTransaction() throws IOException {
+    @Override
+    public boolean doStreamLoad(StarRocksFlushTuple flushData) throws IOException {
+        if (hostPort == null) {
+            hostPort = getAvailableHost();
+            if (hostPort == null) {
+                throw new IOException("No available host for StarRocks connection");
+            }
+            this.label = flushData.getLabel();
+            this.dataBuffer = new ByteArrayOutputStream();
+            this.dataFormatter = new StarRocksDataFormatter(sinkConfig, dataBuffer);
+        }
+        for (byte[] record : flushData.getRows()) {
+            writeRecord(record);
+        }
+        loadData();
+
+        return true; // Transaction mode always returns true, actual result is determined at commit time
+    }
+
+    /** Begin transaction */
+    private void beginTransaction() throws IOException {
         if (transactionStarted) {
             return;
         }
@@ -85,7 +101,7 @@ public class StarRocksTransactionStreamLoad {
     }
 
     /** Write record to buffer */
-    public void writeRecord(byte[] record) throws IOException {
+    private void writeRecord(byte[] record) throws IOException {
         if (!transactionStarted) {
             beginTransaction();
         }
@@ -94,7 +110,7 @@ public class StarRocksTransactionStreamLoad {
     }
 
     /** Load data to StarRocks */
-    public void loadData() throws IOException {
+    private void loadData() throws IOException {
         if (!transactionStarted) {
             throw new StarRocksConnectorException(
                     StarRocksConnectorErrorCode.FLUSH_DATA_FAILED, "Transaction not started");
@@ -104,15 +120,12 @@ public class StarRocksTransactionStreamLoad {
             return;
         }
 
-        // Finalize data buffer
         dataFormatter.finalizeBuffer();
-
         String loadUrl = String.format(LOAD_URL_PATTERN, hostPort);
         HttpPut httpPut = new HttpPut(loadUrl);
 
         httpClient.setCommonHeaders(httpPut, label, database, table);
 
-        // Set stream load properties
         Map<String, Object> streamLoadProps = sinkConfig.getStreamLoadProps();
         for (Map.Entry<String, Object> entry : streamLoadProps.entrySet()) {
             httpPut.setHeader(entry.getKey(), String.valueOf(entry.getValue()));
@@ -132,8 +145,19 @@ public class StarRocksTransactionStreamLoad {
         dataFormatter.reset();
     }
 
+    @Override
+    public StarRocksCommitInfo prepareCommit() throws IOException {
+        if (transactionStarted && txnId != null) {
+            prepareCommitTransaction();
+            StarRocksCommitInfo commitInfo = getCommitInfo();
+            resetTransaction();
+            return commitInfo;
+        }
+        return null;
+    }
+
     /** Prepare commit transaction */
-    public void prepareCommit() throws IOException {
+    private void prepareCommitTransaction() throws IOException {
         if (!transactionStarted) {
             throw new StarRocksConnectorException(
                     StarRocksConnectorErrorCode.FLUSH_DATA_FAILED, "Transaction not started");
@@ -154,19 +178,48 @@ public class StarRocksTransactionStreamLoad {
     }
 
     /** Get commit info for committer */
-    public StarRocksCommitInfo getCommitInfo() {
+    private StarRocksCommitInfo getCommitInfo() {
         if (!transactionStarted || txnId == null) {
             return null;
         }
-        return new StarRocksCommitInfo(hostPort, database, label, txnId);
+        return new StarRocksCommitInfo(hostPort, label, database, txnId);
     }
 
-    /** Close resources */
+    /** Reset transaction state for next checkpoint */
+    private void resetTransaction() {
+        this.hostPort = null;
+        this.label = null;
+        this.txnId = null;
+        this.transactionStarted = false;
+        if (dataBuffer != null) {
+            try {
+                dataBuffer.close();
+            } catch (IOException e) {
+                log.warn("Error closing data buffer", e);
+            }
+            dataBuffer = null;
+        }
+        dataFormatter = null;
+    }
+
+    @Override
+    public void abortTransaction() {
+        if (transactionStarted) {
+            try {
+                resetTransaction();
+            } catch (Exception e) {
+                log.warn("Error during transaction abort", e);
+            }
+        }
+    }
+
+    @Override
     public void close() throws IOException {
         if (dataBuffer != null) {
             dataBuffer.close();
         }
     }
+
 
     public boolean isTransactionStarted() {
         return transactionStarted;

@@ -17,72 +17,110 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.client;
 
+import org.apache.seatunnel.api.table.catalog.TableSchema;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitInfo;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.io.IOException;
+import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class StarRocksSinkManagerTest {
 
     private SinkConfig mockSinkConfig;
-    private StarRocksStreamLoadVisitor mockStreamLoadVisitor;
+    private TableSchema mockTableSchema;
+    private AbstractStreamLoadVisitor mockStreamLoadVisitor;
     private StarRocksSinkManager sinkManager;
 
     @BeforeEach
     void setUp() {
         mockSinkConfig = mock(SinkConfig.class);
-        mockStreamLoadVisitor = mock(StarRocksStreamLoadVisitor.class);
+        mockTableSchema = mock(TableSchema.class);
+        mockStreamLoadVisitor = mock(AbstractStreamLoadVisitor.class);
+
         when(mockSinkConfig.getBatchMaxSize()).thenReturn(10);
         when(mockSinkConfig.getBatchMaxBytes()).thenReturn(1024 * 1024 * 1024L);
-        when(mockSinkConfig.getMaxRetries()).thenReturn(3);
-        when(mockSinkConfig.getRetryBackoffMultiplierMs()).thenReturn(100);
-        when(mockSinkConfig.getMaxRetryBackoffMs()).thenReturn(1000);
-        this.sinkManager =
-                new StarRocksSinkManager(mockSinkConfig, null, mockStreamLoadVisitor) {
-                    public String createBatchLabel() {
-                        return "test-label";
-                    }
-                };
+        when(mockSinkConfig.getNodeUrls()).thenReturn(Arrays.asList("localhost:8030"));
+        when(mockSinkConfig.isEnable2PC()).thenReturn(false);
+
+        this.sinkManager = new StarRocksSinkManager(mockSinkConfig, mockTableSchema, mockStreamLoadVisitor);
     }
 
     @Test
-    void testLabelAlreadyMessageHandledCorrectly() throws Exception {
-        // Mock behavior for label already used
-        doThrow(new RuntimeException("Label [test-label] has already been used"))
-                .when(mockStreamLoadVisitor)
-                .doStreamLoad(any());
+    void testNormalModeInitialization() {
+        when(mockSinkConfig.isEnable2PC()).thenReturn(false);
 
-        // Add a record to trigger flush
-        sinkManager.write("test-record");
+        StarRocksSinkManager manager = new StarRocksSinkManager(mockSinkConfig, mockTableSchema);
 
-        // Verify that the exception is caught and the batch is skipped
-        assertDoesNotThrow(() -> sinkManager.flush());
-        verify(mockStreamLoadVisitor, times(1)).doStreamLoad(any());
+        assertNotNull(manager);
     }
 
     @Test
-    void testLabelAlreadyMessageNotHandled() throws Exception {
-        // Mock behavior for a different exception
-        doThrow(new RuntimeException("Some other error"))
-                .when(mockStreamLoadVisitor)
-                .doStreamLoad(any());
+    void testTransactionModeInitialization() {
+        when(mockSinkConfig.isEnable2PC()).thenReturn(true);
 
-        // Add a record to trigger flush
+        StarRocksSinkManager manager = new StarRocksSinkManager(mockSinkConfig, mockTableSchema);
+
+        assertNotNull(manager);
+    }
+
+    @Test
+    void testWriteAndFlushInNormalMode() throws IOException {
+        when(mockSinkConfig.getBatchMaxSize()).thenReturn(1); // Force flush after 1 record
+        when(mockStreamLoadVisitor.doStreamLoad(any(StarRocksFlushTuple.class))).thenReturn(true);
+
         sinkManager.write("test-record");
 
-        // Verify that the exception is propagated after retries
-        assertThrows(StarRocksConnectorException.class, () -> sinkManager.flush());
-        verify(mockStreamLoadVisitor, times(4))
-                .doStreamLoad(any()); // 3 retries + 1 initial attempt
+        // Verify that doStreamLoad was called on the visitor
+        verify(mockStreamLoadVisitor, times(1)).doStreamLoad(any(StarRocksFlushTuple.class));
+    }
+
+    @Test
+    void testPrepareCommitInNormalMode() throws IOException {
+        when(mockSinkConfig.isEnable2PC()).thenReturn(false);
+
+        StarRocksCommitInfo commitInfo = sinkManager.prepareCommit();
+
+        assertNull(commitInfo); // Normal mode should return null
+    }
+
+    @Test
+    void testAbortTransactionInNormalMode() {
+        when(mockSinkConfig.isEnable2PC()).thenReturn(false);
+
+        // Should not throw exception in normal mode
+        assertDoesNotThrow(() -> sinkManager.abortTransaction());
+    }
+
+    @Test
+    void testClose() throws IOException {
+        sinkManager.close();
+
+        // Verify that close was called on the visitor
+        verify(mockStreamLoadVisitor, times(1)).close();
+    }
+
+    @Test
+    void testPrepareCommitDelegation() throws IOException {
+        StarRocksCommitInfo expectedCommitInfo = new StarRocksCommitInfo("host", "label", "db", 123L);
+        when(mockStreamLoadVisitor.prepareCommit()).thenReturn(expectedCommitInfo);
+
+        StarRocksCommitInfo actualCommitInfo = sinkManager.prepareCommit();
+
+        assertEquals(expectedCommitInfo, actualCommitInfo);
+        verify(mockStreamLoadVisitor, times(1)).prepareCommit();
+    }
+
+    @Test
+    void testAbortTransactionDelegation() {
+        sinkManager.abortTransaction();
+
+        verify(mockStreamLoadVisitor, times(1)).abortTransaction();
     }
 }

@@ -44,6 +44,7 @@ import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRo
 import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitter;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.writer.StarRocksSinkState;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.writer.StarRocksSinkStateSerializer;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.writer.StarRocksSinkWriter;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -53,10 +54,10 @@ import java.util.Optional;
 
 public class StarRocksSink
         implements SeaTunnelSink<
-                        SeaTunnelRow, StarRocksSinkState, StarRocksCommitInfo, StarRocksCommitInfo>,
-                SupportSaveMode,
-                SupportSchemaEvolutionSink,
-                SupportMultiTableSink {
+        SeaTunnelRow, StarRocksSinkState, StarRocksCommitInfo, StarRocksCommitInfo>,
+        SupportSaveMode,
+        SupportSchemaEvolutionSink,
+        SupportMultiTableSink {
 
     private final TableSchema tableSchema;
     private final SinkConfig sinkConfig;
@@ -105,10 +106,7 @@ public class StarRocksSink
 
     @Override
     public Optional<Serializer<StarRocksCommitInfo>> getCommitInfoSerializer() {
-        if (sinkConfig.isEnable2PC()) {
-            return Optional.of(new StarRocksCommitInfoSerializer());
-        }
-        return Optional.empty();
+        return Optional.of(new StarRocksCommitInfoSerializer());
     }
 
     @Override
@@ -142,10 +140,7 @@ public class StarRocksSink
 
     @Override
     public Optional<SinkCommitter<StarRocksCommitInfo>> createCommitter() throws IOException {
-        if (sinkConfig.isEnable2PC()) {
-            return Optional.of(new StarRocksCommitter(sinkConfig));
-        }
-        return Optional.empty();
+        return Optional.of(new StarRocksCommitter(sinkConfig));
     }
 
     @Override

@@ -17,15 +17,15 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.client;
 
-import org.apache.seatunnel.shade.com.google.common.base.Strings;
-
+import com.google.common.annotations.VisibleForTesting;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.seatunnel.api.table.catalog.TableSchema;
 import org.apache.seatunnel.common.utils.ExceptionUtils;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
-
-import lombok.extern.slf4j.Slf4j;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitInfo;
+import org.apache.seatunnel.shade.com.google.common.base.Strings;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -39,23 +39,31 @@ public class StarRocksSinkManager {
     private final SinkConfig sinkConfig;
     private final List<byte[]> batchList;
 
-    private final StarRocksStreamLoadVisitor starrocksStreamLoadVisitor;
+    private final AbstractStreamLoadVisitor streamLoadVisitor;
+
     private volatile boolean initialize;
     private volatile Exception flushException;
     private int batchRowCount = 0;
     private long batchBytesSize = 0;
 
     public StarRocksSinkManager(SinkConfig sinkConfig, TableSchema tableSchema) {
-        this(sinkConfig, tableSchema, new StarRocksStreamLoadVisitor(sinkConfig, tableSchema));
+        this.sinkConfig = sinkConfig;
+        this.batchList = new ArrayList<>();
+        if (sinkConfig.isEnable2PC()) {
+            this.streamLoadVisitor = new StarRocksTransactionStreamLoadVisitor(sinkConfig, tableSchema);
+        } else {
+            this.streamLoadVisitor = new StarRocksStreamLoadVisitor(sinkConfig, tableSchema);
+        }
     }
 
+    @VisibleForTesting
     StarRocksSinkManager(
             SinkConfig sinkConfig,
             TableSchema tableSchema,
-            StarRocksStreamLoadVisitor streamLoadVisitor) {
+            AbstractStreamLoadVisitor streamLoadVisitor) {
         this.sinkConfig = sinkConfig;
         this.batchList = new ArrayList<>();
-        starrocksStreamLoadVisitor = streamLoadVisitor;
+        this.streamLoadVisitor = streamLoadVisitor;
     }
 
     private void tryInit() throws IOException {
@@ -79,7 +87,13 @@ public class StarRocksSinkManager {
     }
 
     public synchronized void close() throws IOException {
-        flush();
+        try {
+            flush();
+            streamLoadVisitor.close();
+        } catch (Exception e) {
+            log.error("Error closing StarRocksSinkManager", e);
+            throw e;
+        }
     }
 
     public synchronized void flush() throws IOException {
@@ -87,12 +101,13 @@ public class StarRocksSinkManager {
         if (batchList.isEmpty()) {
             return;
         }
+
         String label = createBatchLabel();
-        StarRocksFlushTuple tuple =
-                new StarRocksFlushTuple(label, batchBytesSize, new ArrayList<>(batchList));
+        StarRocksFlushTuple tuple = new StarRocksFlushTuple(label, batchBytesSize, new ArrayList<>(batchList));
+
         for (int i = 0; i <= sinkConfig.getMaxRetries(); i++) {
             try {
-                Boolean successFlag = starrocksStreamLoadVisitor.doStreamLoad(tuple);
+                boolean successFlag = streamLoadVisitor.doStreamLoad(tuple);
                 if (successFlag) {
                     break;
                 }
@@ -135,6 +150,20 @@ public class StarRocksSinkManager {
                 }
             }
         }
+
+        batchList.clear();
+        batchRowCount = 0;
+        batchBytesSize = 0;
+    }
+
+    public synchronized StarRocksCommitInfo prepareCommit() throws IOException {
+        flush();
+        return streamLoadVisitor.prepareCommit();
+    }
+
+    public synchronized void abortTransaction() {
+        streamLoadVisitor.abortTransaction();
+
         batchList.clear();
         batchRowCount = 0;
         batchBytesSize = 0;
@@ -147,7 +176,7 @@ public class StarRocksSinkManager {
         }
     }
 
-    public String createBatchLabel() {
+    private String createBatchLabel() {
         StringBuilder sb = new StringBuilder();
         if (!Strings.isNullOrEmpty(sinkConfig.getLabelPrefix())) {
             sb.append(sinkConfig.getLabelPrefix());
