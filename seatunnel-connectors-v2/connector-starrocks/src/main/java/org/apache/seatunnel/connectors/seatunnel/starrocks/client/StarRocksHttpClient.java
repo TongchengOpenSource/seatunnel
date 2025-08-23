@@ -157,17 +157,16 @@ public class StarRocksHttpClient {
 
     /** Validate response status with warning on failure */
     public void validateResponseWithWarning(
-            StarRocksHttpResponse response, String operation, String label, Long txnId) {
+            StarRocksHttpResponse response, String operation, String label) {
         if (!SUCCESS_STATUS.equals(response.getResultMap().get("Status"))) {
             String message = (String) response.getResultMap().get("Message");
             log.warn(
-                    "Failed to {} for label: {}, txnId: {}, message: {}",
+                    "Failed to {} for label: {}, message: {}",
                     operation,
                     label,
-                    txnId,
                     message);
         } else {
-            log.info("Successfully {} for label: {}, txnId: {}", operation, label, txnId);
+            log.info("Successfully {} for label: {}", operation, label);
         }
     }
 

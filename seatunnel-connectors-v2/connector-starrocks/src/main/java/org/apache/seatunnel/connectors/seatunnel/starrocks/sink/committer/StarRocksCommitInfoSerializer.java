@@ -36,7 +36,6 @@ public class StarRocksCommitInfoSerializer implements Serializer<StarRocksCommit
             dos.writeUTF(commitInfo.getHostPort());
             dos.writeUTF(commitInfo.getDb());
             dos.writeUTF(commitInfo.getLabel());
-            dos.writeLong(commitInfo.getTxnId());
 
             return baos.toByteArray();
         }
@@ -49,8 +48,7 @@ public class StarRocksCommitInfoSerializer implements Serializer<StarRocksCommit
             String hostPort = dis.readUTF();
             String db = dis.readUTF();
             String label = dis.readUTF();
-            long txnId = dis.readLong();
-            return new StarRocksCommitInfo(hostPort, label, db, txnId);
+            return new StarRocksCommitInfo(hostPort, label, db);
         }
     }
 }

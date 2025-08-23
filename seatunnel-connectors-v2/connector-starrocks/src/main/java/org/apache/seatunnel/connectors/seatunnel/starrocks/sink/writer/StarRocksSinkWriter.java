@@ -80,6 +80,8 @@ public class StarRocksSinkWriter
         this.serializer = createSerializer(sinkConfig, seaTunnelRowType);
         this.sinkConfig = sinkConfig;
         this.sinkTablePath = tablePath;
+        this.lastCheckpointId = !state.isEmpty() ? state.get(0).getCheckpointId() : 0;
+
         //todo
         this.labelPrefix = "";
         this.labelGenerator = new LabelGenerator(labelPrefix, sinkConfig.isEnable2PC());
@@ -146,7 +148,6 @@ public class StarRocksSinkWriter
     @Override
     public List<StarRocksSinkState> snapshotState(long checkpointId) throws IOException {
         checkState(manager != null);
-        this.lastCheckpointId = checkpointId;
         return Collections.singletonList(new StarRocksSinkState(labelPrefix, lastCheckpointId));
     }
 

@@ -70,6 +70,7 @@ public class StarRocksSinkFactory implements TableSinkFactory {
                 .conditional(
                         DATA_SAVE_MODE,
                         DataSaveMode.CUSTOM_PROCESSING,
+                        StarRocksSinkOptions.ENABLE_2PC,
                         StarRocksSinkOptions.CUSTOM_SQL)
                 .build();
     }

@@ -108,7 +108,7 @@ public class StarRocksSinkManagerTest {
 
     @Test
     void testPrepareCommitDelegation() throws IOException {
-        StarRocksCommitInfo expectedCommitInfo = new StarRocksCommitInfo("host", "label", "db", 123L);
+        StarRocksCommitInfo expectedCommitInfo = new StarRocksCommitInfo("host", "label", "db");
         when(mockStreamLoadVisitor.prepareCommit()).thenReturn(expectedCommitInfo);
 
         StarRocksCommitInfo actualCommitInfo = sinkManager.prepareCommit();

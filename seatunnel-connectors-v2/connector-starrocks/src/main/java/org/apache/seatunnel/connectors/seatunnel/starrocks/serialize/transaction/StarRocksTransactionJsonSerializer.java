@@ -15,31 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+package org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.transaction;
 
-import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 
-@Setter
-@Getter
-@ToString
-@EqualsAndHashCode
-/** StarRocks commit info for transaction stream load */
-public class StarRocksCommitInfo implements Serializable {
+public class StarRocksTransactionJsonSerializer implements StarRocksTransactionISerializer {
 
-    private static final long serialVersionUID = 1L;
+    private static final byte[] first = "[".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] delimiter = ",".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] end = "]".getBytes(StandardCharsets.UTF_8);
 
-    private String hostPort;
-    private String label;
-    private String db;
+    @Override
+    public byte[] first() {
+        return first;
+    }
 
-    public StarRocksCommitInfo(String hostPort, String label, String db) {
-        this.hostPort = hostPort;
-        this.db = db;
-        this.label = label;
+    @Override
+    public byte[] delimiter() {
+        return delimiter;
+    }
+
+    @Override
+    public byte[] end() {
+        return end;
     }
 }

@@ -19,6 +19,7 @@ package org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer;
 
 import org.apache.seatunnel.api.sink.SinkCommitter;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.client.StarRocksHttpClient;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.client.StarRocksTransactionStreamLoadVisitor;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
 
 import org.apache.http.client.methods.HttpPost;
@@ -33,23 +34,19 @@ import java.util.List;
 @Slf4j
 public class StarRocksCommitter implements SinkCommitter<StarRocksCommitInfo> {
 
-    private static final String COMMIT_PATTERN = "http://%s/api/transaction/commit";
-    private static final String ROLLBACK_PATTERN = "http://%s/api/transaction/rollback";
-    private static final int MAX_RETRY = 3;
-
     private final SinkConfig sinkConfig;
-    private final StarRocksHttpClient httpClient;
+    private final StarRocksTransactionStreamLoadVisitor transactionStreamLoadVisitor;
 
     public StarRocksCommitter(SinkConfig sinkConfig) {
         this.sinkConfig = sinkConfig;
-        this.httpClient = new StarRocksHttpClient(sinkConfig);
+        this.transactionStreamLoadVisitor = new StarRocksTransactionStreamLoadVisitor(sinkConfig, null);
     }
 
     @Override
     public List<StarRocksCommitInfo> commit(List<StarRocksCommitInfo> commitInfos)
             throws IOException {
         for (StarRocksCommitInfo commitInfo : commitInfos) {
-            commitTransaction(commitInfo);
+            transactionStreamLoadVisitor.commit(commitInfo);
         }
         return Collections.emptyList();
     }
@@ -57,47 +54,8 @@ public class StarRocksCommitter implements SinkCommitter<StarRocksCommitInfo> {
     @Override
     public void abort(List<StarRocksCommitInfo> commitInfos) throws IOException {
         for (StarRocksCommitInfo commitInfo : commitInfos) {
-            rollbackTransaction(commitInfo);
+            transactionStreamLoadVisitor.rollback(commitInfo);
         }
     }
 
-    private void commitTransaction(StarRocksCommitInfo commitInfo) throws IOException {
-        String commitUrl = String.format(COMMIT_PATTERN, commitInfo.getHostPort());
-        HttpPost httpPost = new HttpPost(commitUrl);
-
-        httpClient.setCommonHeaders(httpPost, commitInfo.getLabel(), commitInfo.getDb());
-        httpClient.setEmptyEntity(httpPost);
-
-        StarRocksHttpClient.StarRocksHttpResponse response =
-                httpClient.executeRequestWithRetry(httpPost, "Commit transaction", MAX_RETRY);
-
-        httpClient.validateResponse(response, "Commit transaction");
-
-        log.info(
-                "Successfully committed transaction for label: {}, txnId: {}",
-                commitInfo.getLabel(),
-                commitInfo.getTxnId());
-    }
-
-    private void rollbackTransaction(StarRocksCommitInfo commitInfo) throws IOException {
-        String rollbackUrl = String.format(ROLLBACK_PATTERN, commitInfo.getHostPort());
-        HttpPost httpPost = new HttpPost(rollbackUrl);
-
-        httpClient.setCommonHeaders(httpPost, commitInfo.getLabel(), commitInfo.getDb());
-        httpClient.setEmptyEntity(httpPost);
-
-        try {
-            StarRocksHttpClient.StarRocksHttpResponse response =
-                    httpClient.executeRequest(httpPost, "Rollback transaction");
-
-            httpClient.validateResponseWithWarning(
-                    response, "rollback transaction", commitInfo.getLabel(), commitInfo.getTxnId());
-        } catch (Exception e) {
-            log.warn(
-                    "Failed to rollback transaction for label: {}, txnId: {}",
-                    commitInfo.getLabel(),
-                    commitInfo.getTxnId(),
-                    e);
-        }
-    }
 }

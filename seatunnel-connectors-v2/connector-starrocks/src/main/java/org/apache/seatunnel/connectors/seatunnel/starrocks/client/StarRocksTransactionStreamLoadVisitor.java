@@ -21,6 +21,7 @@ import org.apache.seatunnel.api.table.catalog.TableSchema;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.StarRocksDataFormatter;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.committer.StarRocksCommitInfo;
 
 import org.apache.http.client.methods.HttpPost;
@@ -40,6 +41,8 @@ public class StarRocksTransactionStreamLoadVisitor extends AbstractStreamLoadVis
     private static final String BEGIN_TXN_URL_PATTERN = "http://%s/api/transaction/begin";
     private static final String LOAD_URL_PATTERN = "http://%s/api/transaction/load";
     private static final String PREPARE_URL_PATTERN = "http://%s/api/transaction/prepare";
+    private static final String COMMIT_PATTERN = "http://%s/api/transaction/commit";
+    private static final String ROLLBACK_PATTERN = "http://%s/api/transaction/rollback";
 
     private String hostPort;
     private String database;
@@ -176,7 +179,7 @@ public class StarRocksTransactionStreamLoadVisitor extends AbstractStreamLoadVis
         if (!transactionStarted || txnId == null) {
             return null;
         }
-        return new StarRocksCommitInfo(hostPort, label, database, txnId);
+        return new StarRocksCommitInfo(hostPort, label, database);
     }
 
     /** Reset transaction state for next checkpoint */
@@ -214,16 +217,41 @@ public class StarRocksTransactionStreamLoadVisitor extends AbstractStreamLoadVis
         }
     }
 
+    public void commit(StarRocksCommitInfo commitInfo) throws IOException {
+        String commitUrl = String.format(COMMIT_PATTERN, commitInfo.getHostPort());
+        HttpPost httpPost = new HttpPost(commitUrl);
 
-    public boolean isTransactionStarted() {
-        return transactionStarted;
+        httpClient.setCommonHeaders(httpPost, commitInfo.getLabel(), commitInfo.getDb());
+        httpClient.setEmptyEntity(httpPost);
+
+        StarRocksHttpClient.StarRocksHttpResponse response =
+                httpClient.executeRequestWithRetry(httpPost, "Commit transaction", MAX_RETRY);
+
+        httpClient.validateResponse(response, "Commit transaction");
+
+        log.info(
+                "Successfully committed transaction for label: {}",
+                commitInfo.getLabel());
     }
 
-    public Long getTxnId() {
-        return txnId;
-    }
+    public void rollback(StarRocksCommitInfo commitInfo) throws IOException {
+        String rollbackUrl = String.format(ROLLBACK_PATTERN, commitInfo.getHostPort());
+        HttpPost httpPost = new HttpPost(rollbackUrl);
 
-    public String getLabel() {
-        return label;
+        httpClient.setCommonHeaders(httpPost, commitInfo.getLabel(), commitInfo.getDb());
+        httpClient.setEmptyEntity(httpPost);
+
+        try {
+            StarRocksHttpClient.StarRocksHttpResponse response =
+                    httpClient.executeRequest(httpPost, "Rollback transaction");
+
+            httpClient.validateResponseWithWarning(
+                    response, "rollback transaction", commitInfo.getLabel());
+        } catch (Exception e) {
+            log.warn(
+                    "Failed to rollback transaction for label: {}",
+                    commitInfo.getLabel(),
+                    e);
+        }
     }
 }
