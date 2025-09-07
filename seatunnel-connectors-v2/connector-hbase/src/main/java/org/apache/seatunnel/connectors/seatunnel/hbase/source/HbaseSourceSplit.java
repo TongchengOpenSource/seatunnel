@@ -20,10 +20,14 @@ package org.apache.seatunnel.connectors.seatunnel.hbase.source;
 
 import org.apache.seatunnel.api.source.SourceSplit;
 
+import lombok.Getter;
+
+@Getter
 public class HbaseSourceSplit implements SourceSplit {
     public static final String HBASE_SOURCE_SPLIT_PREFIX = "hbase_source_split_";
     private static final long serialVersionUID = 34191409620359295L;
     private String splitId;
+    private byte[] family;
     private byte[] startRow;
     private byte[] endRow;
 
@@ -45,13 +49,5 @@ public class HbaseSourceSplit implements SourceSplit {
     @Override
     public String splitId() {
         return splitId;
-    }
-
-    public byte[] getStartRow() {
-        return startRow;
-    }
-
-    public byte[] getEndRow() {
-        return endRow;
     }
 }

@@ -338,6 +338,33 @@ public class HbaseIT extends TestSuiteBase implements TestResource {
                 () -> catalog.dropTable(TablePath.of("", "", "tmp"), false));
     }
 
+    @TestTemplate
+    public void testHbaseSourceWithStartRowKey(TestContainer container)
+            throws IOException, InterruptedException {
+        fakeToHbase(container);
+        Container.ExecResult sourceExecResult =
+                container.executeJob("/hbase-source-with-start-rowkey.conf");
+        Assertions.assertEquals(0, sourceExecResult.getExitCode());
+    }
+
+    @TestTemplate
+    public void testHbaseSourceWithEndRowKey(TestContainer container)
+            throws IOException, InterruptedException {
+        fakeToHbase(container);
+        Container.ExecResult sourceExecResult =
+                container.executeJob("/hbase-source-with-end-rowkey.conf");
+        Assertions.assertEquals(0, sourceExecResult.getExitCode());
+    }
+
+    @TestTemplate
+    public void testHbaseSourceWithRowKeyRange(TestContainer container)
+            throws IOException, InterruptedException {
+        fakeToHbase(container);
+        Container.ExecResult sourceExecResult =
+                container.executeJob("/hbase-source-with-rowkey-range.conf");
+        Assertions.assertEquals(0, sourceExecResult.getExitCode());
+    }
+
     private void fakeToHbase(TestContainer container) throws IOException, InterruptedException {
         deleteData(table);
         Container.ExecResult sinkExecResult = container.executeJob("/fake-to-hbase.conf");

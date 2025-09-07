@@ -367,6 +367,7 @@ public class HbaseClient {
             HbaseSourceSplit split, HbaseParameters hbaseParameters, List<String> columnNames)
             throws IOException {
         Scan scan = new Scan();
+        scan.addFamily(split.getFamily());
         scan.withStartRow(split.getStartRow(), true);
         scan.withStopRow(split.getEndRow(), true);
         scan.setCacheBlocks(hbaseParameters.isCacheBlocks());

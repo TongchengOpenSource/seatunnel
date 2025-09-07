@@ -24,6 +24,7 @@ import org.apache.seatunnel.api.table.connector.TableSink;
 import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.api.table.factory.TableSinkFactory;
 import org.apache.seatunnel.api.table.factory.TableSinkFactoryContext;
+import org.apache.seatunnel.connectors.seatunnel.hbase.config.HbaseBaseOptions;
 import org.apache.seatunnel.connectors.seatunnel.hbase.config.HbaseSinkOptions;
 import org.apache.seatunnel.connectors.seatunnel.hbase.constant.HbaseIdentifier;
 
@@ -43,7 +44,7 @@ public class HbaseSinkFactory implements TableSinkFactory {
                 .required(
                         HbaseSinkOptions.ZOOKEEPER_QUORUM,
                         HbaseSinkOptions.TABLE,
-                        HbaseSinkOptions.ROWKEY_COLUMNS,
+                        HbaseBaseOptions.ROWKEY_COLUMNS,
                         HbaseSinkOptions.FAMILY_NAME,
                         HbaseSinkOptions.SCHEMA_SAVE_MODE,
                         HbaseSinkOptions.DATA_SAVE_MODE)

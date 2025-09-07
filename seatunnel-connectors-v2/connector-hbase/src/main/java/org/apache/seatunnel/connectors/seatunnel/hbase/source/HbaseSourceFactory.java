@@ -44,8 +44,18 @@ public class HbaseSourceFactory implements TableSourceFactory {
     @Override
     public OptionRule optionRule() {
         return OptionRule.builder()
-                .required(HbaseSourceOptions.ZOOKEEPER_QUORUM)
-                .required(HbaseSourceOptions.TABLE)
+                .required(
+                        HbaseSourceOptions.ZOOKEEPER_QUORUM,
+                        HbaseSourceOptions.TABLE,
+                        HbaseSourceOptions.SCHEMA)
+                .optional(
+                        HbaseSourceOptions.HBASE_CACHE_BLOCKS_CONFIG,
+                        HbaseSourceOptions.HBASE_CACHING_CONFIG,
+                        HbaseSourceOptions.HBASE_BATCH_CONFIG,
+                        HbaseSourceOptions.HBASE_EXTRA_CONFIG,
+                        HbaseSourceOptions.IS_BINARY_ROW_KEY,
+                        HbaseSourceOptions.START_ROW_KEY,
+                        HbaseSourceOptions.END_ROW_KEY)
                 .build();
     }
 
