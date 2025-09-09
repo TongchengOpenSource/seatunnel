@@ -80,7 +80,7 @@ public class HbaseSourceSplitEnumeratorTest {
         assertEquals(1, splits.size());
 
         HbaseSourceSplit split = splits.iterator().next();
-        assertEquals("hbase_source_split_0", split.getSplitId());
+        assertEquals("hbase_source_split_0", split.splitId());
         assertArrayEquals(HConstants.EMPTY_BYTE_ARRAY, split.getStartRow());
         assertArrayEquals(HConstants.EMPTY_BYTE_ARRAY, split.getEndRow());
     }
@@ -106,15 +106,15 @@ public class HbaseSourceSplitEnumeratorTest {
         // Verify splits are created correctly
         boolean foundFirstSplit = false, foundSecondSplit = false, foundThirdSplit = false;
         for (HbaseSourceSplit split : splits) {
-            if ("hbase_source_split_0".equals(split.getSplitId())) {
+            if ("hbase_source_split_0".equals(split.splitId())) {
                 foundFirstSplit = true;
                 assertArrayEquals(HConstants.EMPTY_BYTE_ARRAY, split.getStartRow());
                 assertArrayEquals(Bytes.toBytes("region1"), split.getEndRow());
-            } else if ("hbase_source_split_1".equals(split.getSplitId())) {
+            } else if ("hbase_source_split_1".equals(split.splitId())) {
                 foundSecondSplit = true;
                 assertArrayEquals(Bytes.toBytes("region1"), split.getStartRow());
                 assertArrayEquals(Bytes.toBytes("region2"), split.getEndRow());
-            } else if ("hbase_source_split_2".equals(split.getSplitId())) {
+            } else if ("hbase_source_split_2".equals(split.splitId())) {
                 foundThirdSplit = true;
                 assertArrayEquals(Bytes.toBytes("region2"), split.getStartRow());
                 assertArrayEquals(HConstants.EMPTY_BYTE_ARRAY, split.getEndRow());
@@ -153,12 +153,12 @@ public class HbaseSourceSplitEnumeratorTest {
         // Verify the splits contain the correct row key ranges
         boolean foundRegion1Split = false, foundRegion2Split = false;
         for (HbaseSourceSplit split : splits) {
-            if ("hbase_source_split_1".equals(split.getSplitId())) {
+            if ("hbase_source_split_1".equals(split.splitId())) {
                 foundRegion1Split = true;
                 // Start should be user's start key (row100), end should be region end (row200)
                 assertArrayEquals(Bytes.toBytes("row100"), split.getStartRow());
                 assertArrayEquals(Bytes.toBytes("row200"), split.getEndRow());
-            } else if ("hbase_source_split_2".equals(split.getSplitId())) {
+            } else if ("hbase_source_split_2".equals(split.splitId())) {
                 foundRegion2Split = true;
                 // Start should be region start (row200), end should be user's end key (row300)
                 assertArrayEquals(Bytes.toBytes("row200"), split.getStartRow());
@@ -208,7 +208,7 @@ public class HbaseSourceSplitEnumeratorTest {
         assertEquals(1, splits.size()); // Should include the last region
 
         HbaseSourceSplit split = splits.iterator().next();
-        assertEquals("hbase_source_split_2", split.getSplitId());
+        assertEquals("hbase_source_split_2", split.splitId());
         assertArrayEquals(Bytes.toBytes("row500"), split.getStartRow());
         assertArrayEquals(Bytes.toBytes("row600"), split.getEndRow());
     }
@@ -235,11 +235,11 @@ public class HbaseSourceSplitEnumeratorTest {
 
         boolean foundRegion1Split = false, foundRegion2Split = false;
         for (HbaseSourceSplit split : splits) {
-            if ("hbase_source_split_1".equals(split.getSplitId())) {
+            if ("hbase_source_split_1".equals(split.splitId())) {
                 foundRegion1Split = true;
                 assertArrayEquals(Bytes.toBytes("row150"), split.getStartRow());
                 assertArrayEquals(Bytes.toBytes("row200"), split.getEndRow());
-            } else if ("hbase_source_split_2".equals(split.getSplitId())) {
+            } else if ("hbase_source_split_2".equals(split.splitId())) {
                 foundRegion2Split = true;
                 assertArrayEquals(Bytes.toBytes("row200"), split.getStartRow());
                 assertArrayEquals(HConstants.EMPTY_BYTE_ARRAY, split.getEndRow());
@@ -271,11 +271,11 @@ public class HbaseSourceSplitEnumeratorTest {
 
         boolean foundRegion0Split = false, foundRegion1Split = false;
         for (HbaseSourceSplit split : splits) {
-            if ("hbase_source_split_0".equals(split.getSplitId())) {
+            if ("hbase_source_split_0".equals(split.splitId())) {
                 foundRegion0Split = true;
                 assertArrayEquals(HConstants.EMPTY_BYTE_ARRAY, split.getStartRow());
                 assertArrayEquals(Bytes.toBytes("row100"), split.getEndRow());
-            } else if ("hbase_source_split_1".equals(split.getSplitId())) {
+            } else if ("hbase_source_split_1".equals(split.splitId())) {
                 foundRegion1Split = true;
                 assertArrayEquals(Bytes.toBytes("row100"), split.getStartRow());
                 assertArrayEquals(Bytes.toBytes("row150"), split.getEndRow());
@@ -321,7 +321,7 @@ public class HbaseSourceSplitEnumeratorTest {
         assertEquals(1, splits.size());
 
         HbaseSourceSplit split = splits.iterator().next();
-        assertEquals("hbase_source_split_1", split.getSplitId());
+        assertEquals("hbase_source_split_1", split.splitId());
         assertArrayEquals(Bytes.toBytes("row100"), split.getStartRow());
         assertArrayEquals(Bytes.toBytes("row200"), split.getEndRow());
     }
