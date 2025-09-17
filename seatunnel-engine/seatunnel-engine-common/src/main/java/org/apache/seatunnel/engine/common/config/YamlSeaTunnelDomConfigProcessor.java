@@ -29,6 +29,7 @@ import org.apache.seatunnel.engine.common.config.server.QueueType;
 import org.apache.seatunnel.engine.common.config.server.ScheduleStrategy;
 import org.apache.seatunnel.engine.common.config.server.ServerConfigOptions;
 import org.apache.seatunnel.engine.common.config.server.SlotServiceConfig;
+import org.apache.seatunnel.engine.common.config.server.TagConfig;
 import org.apache.seatunnel.engine.common.config.server.TelemetryConfig;
 import org.apache.seatunnel.engine.common.config.server.TelemetryLogsConfig;
 import org.apache.seatunnel.engine.common.config.server.TelemetryMetricConfig;
@@ -223,6 +224,8 @@ public class YamlSeaTunnelDomConfigProcessor extends AbstractDomConfigProcessor 
                 engineConfig.setConnectorJarStorageConfig(parseConnectorJarStorageConfig(node));
             } else if (ServerConfigOptions.CLASSLOADER_CACHE_MODE.key().equals(name)) {
                 engineConfig.setClassloaderCacheMode(getBooleanValue(getTextContent(node)));
+            } else if (ServerConfigOptions.MasterServerConfigOptions.TAG.key().equals(name)) {
+                engineConfig.setTagConfig(parseTagConfig(node));
             } else if (ServerConfigOptions.MasterServerConfigOptions.EVENT_REPORT_HTTP
                     .equalsIgnoreCase(name)) {
                 NamedNodeMap attributes = node.getAttributes();
@@ -583,5 +586,19 @@ public class YamlSeaTunnelDomConfigProcessor extends AbstractDomConfigProcessor 
             }
         }
         return httpConfig;
+    }
+
+    private TagConfig parseTagConfig(Node tagFilterNode) {
+        TagConfig tagConfig = new TagConfig();
+        for (Node node : childElements(tagFilterNode)) {
+            String name = cleanNodeName(node);
+            if (ServerConfigOptions.MasterServerConfigOptions.IS_ALLOW_EMPTY_TAG
+                    .key()
+                    .equals(name)) {
+                tagConfig.setAllowEmptyTag(getBooleanValue(getTextContent(node)));
+            }
+        }
+
+        return tagConfig;
     }
 }

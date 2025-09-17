@@ -18,6 +18,7 @@
 package org.apache.seatunnel.engine.server.resourcemanager;
 
 import org.apache.seatunnel.engine.common.config.EngineConfig;
+import org.apache.seatunnel.engine.common.config.server.TagConfig;
 import org.apache.seatunnel.engine.common.runtime.ExecutionMode;
 import org.apache.seatunnel.engine.common.utils.concurrent.CompletableFuture;
 import org.apache.seatunnel.engine.server.resourcemanager.allocation.strategy.RandomStrategy;
@@ -298,7 +299,18 @@ public abstract class AbstractResourceManager implements ResourceManager {
 
     private ConcurrentMap<Address, WorkerProfile> filterWorkerByTag(Map<String, String> tagFilter) {
         if (tagFilter == null || tagFilter.isEmpty()) {
-            return registerWorker;
+            TagConfig tagConfig = engineConfig.getTagConfig();
+            if (tagConfig != null && tagConfig.isAllowEmptyTag()) {
+                return registerWorker;
+            }
+
+            return registerWorker.entrySet().stream()
+                    .filter(
+                            e -> {
+                                Map<String, String> workerAttr = e.getValue().getAttributes();
+                                return workerAttr == null || workerAttr.isEmpty();
+                            })
+                    .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue));
         }
         return registerWorker.entrySet().stream()
                 .filter(
@@ -307,7 +319,6 @@ public abstract class AbstractResourceManager implements ResourceManager {
                             if (workerAttr == null || workerAttr.isEmpty()) {
                                 return false;
                             }
-                            boolean match = true;
                             for (Map.Entry<String, String> entry : tagFilter.entrySet()) {
                                 if (!workerAttr.containsKey(entry.getKey())
                                         || !workerAttr
@@ -316,7 +327,7 @@ public abstract class AbstractResourceManager implements ResourceManager {
                                     return false;
                                 }
                             }
-                            return match;
+                            return true;
                         })
                 .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue));
     }

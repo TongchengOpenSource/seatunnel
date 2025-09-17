@@ -25,6 +25,7 @@ import org.apache.seatunnel.engine.common.config.server.QueueType;
 import org.apache.seatunnel.engine.common.config.server.ScheduleStrategy;
 import org.apache.seatunnel.engine.common.config.server.ServerConfigOptions;
 import org.apache.seatunnel.engine.common.config.server.SlotServiceConfig;
+import org.apache.seatunnel.engine.common.config.server.TagConfig;
 import org.apache.seatunnel.engine.common.config.server.TelemetryConfig;
 import org.apache.seatunnel.engine.common.config.server.ThreadShareMode;
 import org.apache.seatunnel.engine.common.runtime.ExecutionMode;
@@ -78,6 +79,8 @@ public class EngineConfig {
 
     private boolean classloaderCacheMode =
             ServerConfigOptions.CLASSLOADER_CACHE_MODE.defaultValue();
+
+    private TagConfig tagConfig = ServerConfigOptions.MasterServerConfigOptions.TAG.defaultValue();
 
     private QueueType queueType =
             ServerConfigOptions.WorkerServerConfigOptions.QUEUE_TYPE.defaultValue();

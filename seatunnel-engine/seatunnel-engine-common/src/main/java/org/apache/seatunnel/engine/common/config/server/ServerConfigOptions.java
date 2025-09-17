@@ -384,6 +384,22 @@ public class ServerConfigOptions {
         // The options for coordinator service end
         /////////////////////////////////////////////////
 
+        /////////////////////////////////////////////////
+        // The options for tag start
+        public static final Option<TagConfig> TAG =
+                Options.key("tag")
+                        .type(new TypeReference<TagConfig>() {})
+                        .defaultValue(new TagConfig())
+                        .withDescription("The tag configuration.");
+
+        public static final Option<Boolean> IS_ALLOW_EMPTY_TAG =
+                Options.key("is-allow-empty-tag")
+                        .booleanType()
+                        .defaultValue(true)
+                        .withDescription("Whether to use IS_ALLOW_EMPTY_TAG.");
+        // The options for tag end
+        /////////////////////////////////////////////////
+
     }
 
     /** The options for worker. */

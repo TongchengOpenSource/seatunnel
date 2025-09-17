@@ -85,6 +85,8 @@ public class YamlSeaTunnelConfigParserTest {
                 30, config.getEngineConfig().getCoordinatorServiceConfig().getCoreThreadNum());
         Assertions.assertEquals(
                 1000, config.getEngineConfig().getCoordinatorServiceConfig().getMaxThreadNum());
+
+        Assertions.assertTrue(config.getEngineConfig().getTagConfig().isAllowEmptyTag());
     }
 
     @Test

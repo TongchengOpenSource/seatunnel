@@ -35,6 +35,8 @@ seatunnel:
     http:
         enable-http: true
         port: 8080
+    tag:
+      is-allow-empty-tag: false
     telemetry:
       metric:
          enabled: false
