@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -97,6 +99,16 @@ public class WorkerTagTest extends AbstractSeaTunnelServerTest<WorkerTagTest> {
     }
 
     @Test
+    public void testNullTagNotAllowEmptyTag() {
+        setConfigFile("seatunnel_allow_empty_tag_false.yaml");
+        Assertions.assertThrows(
+                NoEnoughResourceException.class, () -> testApplyResourceByTag(new HashMap<>()));
+        Assertions.assertThrows(
+                NoEnoughResourceException.class, () -> testApplyResourceByTag(null));
+        setDefaultConfigFile();
+    }
+
+    @Test
     public void testTagNotMatch() {
         Map<String, String> tag = new HashMap<>();
         tag.put("group", "platform");
@@ -116,5 +128,24 @@ public class WorkerTagTest extends AbstractSeaTunnelServerTest<WorkerTagTest> {
                 slotProfiles.get(0).getResourceProfile().getHeapMemory().getBytes());
 
         resourceManager.releaseResources(jobId, slotProfiles).get();
+    }
+
+    private void setConfigFile(String fileName) {
+        String rootModuleDir = "seatunnel-engine";
+        Path path = Paths.get(System.getProperty("user.dir"));
+        while (!path.endsWith(Paths.get(rootModuleDir))) {
+            path = path.getParent();
+        }
+        String rootPath = path.getParent().toString();
+        System.setProperty(
+                "seatunnel.config",
+                rootPath
+                        + "/seatunnel-engine/seatunnel-engine-server/src/test/resources/"
+                        + fileName);
+        restartServer();
+    }
+
+    private void setDefaultConfigFile() {
+        setConfigFile("seatunnel.yaml");
     }
 }

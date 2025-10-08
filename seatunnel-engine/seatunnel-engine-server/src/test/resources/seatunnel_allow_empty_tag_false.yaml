@@ -23,7 +23,7 @@ seatunnel:
             dynamic-slot: true
             slot-num: 5
         tag:
-            allow-empty-tag: true
+            allow-empty-tag: false
         checkpoint:
             interval: 6000
             timeout: 7000

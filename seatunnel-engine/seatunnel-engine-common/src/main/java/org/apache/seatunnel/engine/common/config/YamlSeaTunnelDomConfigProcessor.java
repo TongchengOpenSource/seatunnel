@@ -592,9 +592,7 @@ public class YamlSeaTunnelDomConfigProcessor extends AbstractDomConfigProcessor 
         TagConfig tagConfig = new TagConfig();
         for (Node node : childElements(tagFilterNode)) {
             String name = cleanNodeName(node);
-            if (ServerConfigOptions.MasterServerConfigOptions.IS_ALLOW_EMPTY_TAG
-                    .key()
-                    .equals(name)) {
+            if (ServerConfigOptions.MasterServerConfigOptions.ALLOW_EMPTY_TAG.key().equals(name)) {
                 tagConfig.setAllowEmptyTag(getBooleanValue(getTextContent(node)));
             }
         }

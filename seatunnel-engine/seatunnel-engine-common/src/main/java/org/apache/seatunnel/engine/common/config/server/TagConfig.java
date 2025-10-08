@@ -24,6 +24,6 @@ import java.io.Serializable;
 @Data
 public class TagConfig implements Serializable {
 
-    private boolean isAllowEmptyTag =
-            ServerConfigOptions.MasterServerConfigOptions.IS_ALLOW_EMPTY_TAG.defaultValue();
+    private boolean allowEmptyTag =
+            ServerConfigOptions.MasterServerConfigOptions.ALLOW_EMPTY_TAG.defaultValue();
 }
