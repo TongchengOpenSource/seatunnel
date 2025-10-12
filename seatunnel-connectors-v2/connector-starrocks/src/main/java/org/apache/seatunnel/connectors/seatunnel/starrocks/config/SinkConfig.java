@@ -56,6 +56,7 @@ public class SinkConfig implements Serializable {
     private int retryBackoffMultiplierMs;
     private int maxRetryBackoffMs;
     private boolean enableUpsertDelete;
+    private boolean enableExactlyOnce;
 
     private String saveModeCreateTemplate;
 
@@ -93,11 +94,14 @@ public class SinkConfig implements Serializable {
                 .ifPresent(options -> sinkConfig.getStreamLoadProps().putAll(options));
         config.getOptional(StarRocksSinkOptions.COLUMN_SEPARATOR)
                 .ifPresent(sinkConfig::setColumnSeparator);
+        config.getOptional(StarRocksSinkOptions.ENABLE_EXACTLY_ONCE)
+                .ifPresent(sinkConfig::setEnableExactlyOnce);
         sinkConfig.setLoadFormat(config.get(StarRocksSinkOptions.LOAD_FORMAT));
         sinkConfig.setSchemaSaveMode(config.get(StarRocksSinkOptions.SCHEMA_SAVE_MODE));
         sinkConfig.setDataSaveMode(config.get(StarRocksSinkOptions.DATA_SAVE_MODE));
         sinkConfig.setCustomSql(config.get(StarRocksSinkOptions.CUSTOM_SQL));
         sinkConfig.setHttpSocketTimeout(config.get(StarRocksSinkOptions.HTTP_SOCKET_TIMEOUT_MS));
+
         return sinkConfig;
     }
 }

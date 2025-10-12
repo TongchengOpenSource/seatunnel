@@ -17,6 +17,7 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.sink;
 
+import org.apache.seatunnel.api.sink.SinkWriter;
 import org.apache.seatunnel.api.sink.SupportMultiTableSinkWriter;
 import org.apache.seatunnel.api.sink.SupportSchemaEvolutionSinkWriter;
 import org.apache.seatunnel.api.table.catalog.TablePath;
@@ -27,13 +28,16 @@ import org.apache.seatunnel.api.table.schema.handler.TableSchemaChangeEventDispa
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 import org.apache.seatunnel.common.exception.CommonError;
-import org.apache.seatunnel.connectors.seatunnel.common.sink.AbstractSinkWriter;
-import org.apache.seatunnel.connectors.seatunnel.starrocks.client.StarRocksSinkManager;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.client.SinkManager;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.client.sink.DefaultSinkManager;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.client.sink.TransactionSinkManager;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
-import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksBaseOptions;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.StarRocksCsvSerializer;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.StarRocksISerializer;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.serialize.StarRocksJsonSerializer;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.commiter.StarRocksCommitInfo;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.state.StarRocksSinkState;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.util.SchemaUtils;
 
 import lombok.SneakyThrows;
@@ -43,27 +47,46 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
+import static org.apache.seatunnel.common.exception.CommonErrorCodeDeprecated.WRITER_OPERATION_FAILED;
+
 @Slf4j
-public class StarRocksSinkWriter extends AbstractSinkWriter<SeaTunnelRow, Void>
-        implements SupportMultiTableSinkWriter<Void>, SupportSchemaEvolutionSinkWriter {
+public class StarRocksSinkWriter
+        implements SinkWriter<SeaTunnelRow, StarRocksCommitInfo, StarRocksSinkState>,
+                SupportMultiTableSinkWriter<StarRocksCommitInfo>,
+                SupportSchemaEvolutionSinkWriter {
     private StarRocksISerializer serializer;
-    private StarRocksSinkManager manager;
+    private SinkManager manager;
     private TableSchema tableSchema;
     private final SinkConfig sinkConfig;
     private final TablePath sinkTablePath;
+    private long lastCheckpointId;
+    private SinkWriter.Context context;
+    private LabelGenerator labelGenerator;
     private final TableSchemaChangeEventDispatcher tableSchemaChangeEventDispatcher =
             new TableSchemaChangeEventDispatcher();
 
     public StarRocksSinkWriter(
-            SinkConfig sinkConfig, TableSchema tableSchema, TablePath tablePath) {
+            SinkWriter.Context context,
+            List<StarRocksSinkState> state,
+            SinkConfig sinkConfig,
+            TableSchema tableSchema,
+            TablePath tablePath) {
+        this.lastCheckpointId = !state.isEmpty() ? state.get(0).getCheckpointId() : 0;
+        log.info("restore checkpointId {}", lastCheckpointId);
         this.tableSchema = tableSchema;
-        SeaTunnelRowType seaTunnelRowType = tableSchema.toPhysicalRowDataType();
-        this.serializer = createSerializer(sinkConfig, seaTunnelRowType);
-        this.manager = new StarRocksSinkManager(sinkConfig, tableSchema);
+        this.serializer = createSerializer(sinkConfig, tableSchema.toPhysicalRowDataType());
         this.sinkConfig = sinkConfig;
         this.sinkTablePath = tablePath;
+        this.context = context;
+        this.labelGenerator = new LabelGenerator(sinkConfig);
+        this.manager =
+                sinkConfig.isEnableExactlyOnce()
+                        ? new TransactionSinkManager(labelGenerator, sinkConfig, context)
+                        : new DefaultSinkManager(sinkConfig, tableSchema);
     }
 
     @Override
@@ -82,7 +105,10 @@ public class StarRocksSinkWriter extends AbstractSinkWriter<SeaTunnelRow, Void>
         this.tableSchema = tableSchemaChangeEventDispatcher.reset(tableSchema).apply(event);
         SeaTunnelRowType seaTunnelRowType = tableSchema.toPhysicalRowDataType();
         this.serializer = createSerializer(sinkConfig, seaTunnelRowType);
-        this.manager = new StarRocksSinkManager(sinkConfig, tableSchema);
+        this.manager =
+                sinkConfig.isEnableExactlyOnce()
+                        ? new TransactionSinkManager(labelGenerator, sinkConfig, context)
+                        : new DefaultSinkManager(sinkConfig, tableSchema);
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -104,10 +130,30 @@ public class StarRocksSinkWriter extends AbstractSinkWriter<SeaTunnelRow, Void>
 
     @SneakyThrows
     @Override
-    public Optional<Void> prepareCommit() {
-        // Flush to storage before snapshot state is performed
-        manager.flush();
-        return super.prepareCommit();
+    public Optional<StarRocksCommitInfo> prepareCommit() {
+        if (!sinkConfig.isEnableExactlyOnce()) {
+            return Optional.empty();
+        }
+        return manager.prepareCommit();
+    }
+
+    @Override
+    public void abortPrepare() {
+        if (sinkConfig.isEnableExactlyOnce()) {
+            try {
+                manager.abort();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
+    public List<StarRocksSinkState> snapshotState(long checkpointId) throws IOException {
+        if (sinkConfig.isEnableExactlyOnce()) {
+            return manager.snapshot(checkpointId);
+        }
+        return Collections.emptyList();
     }
 
     @Override
@@ -116,9 +162,9 @@ public class StarRocksSinkWriter extends AbstractSinkWriter<SeaTunnelRow, Void>
             if (manager != null) {
                 manager.close();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Close starRocks manager failed.", e);
-            throw CommonError.closeFailed(StarRocksBaseOptions.CONNECTOR_IDENTITY, e);
+            throw new StarRocksConnectorException(WRITER_OPERATION_FAILED, e);
         }
     }
 

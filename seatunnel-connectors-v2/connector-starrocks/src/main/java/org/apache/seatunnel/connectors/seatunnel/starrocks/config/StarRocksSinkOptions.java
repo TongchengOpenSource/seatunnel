@@ -155,4 +155,10 @@ public class StarRocksSinkOptions extends StarRocksBaseOptions {
                     .stringType()
                     .noDefaultValue()
                     .withDescription("when data_save_mode selects CUSTOM_PROCESSING custom SQL");
+
+    public static Option<Boolean> ENABLE_EXACTLY_ONCE =
+            Options.key("enable_exactly_once")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription("enable exactly-once while loading");
 }

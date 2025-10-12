@@ -66,7 +66,8 @@ public class StarRocksSinkFactory implements TableSinkFactory {
                         DATA_SAVE_MODE,
                         MULTI_TABLE_SINK_REPLICA,
                         StarRocksSinkOptions.SAVE_MODE_CREATE_TEMPLATE,
-                        StarRocksSinkOptions.HTTP_SOCKET_TIMEOUT_MS)
+                        StarRocksSinkOptions.HTTP_SOCKET_TIMEOUT_MS,
+                        StarRocksSinkOptions.ENABLE_EXACTLY_ONCE)
                 .conditional(
                         DATA_SAVE_MODE,
                         DataSaveMode.CUSTOM_PROCESSING,

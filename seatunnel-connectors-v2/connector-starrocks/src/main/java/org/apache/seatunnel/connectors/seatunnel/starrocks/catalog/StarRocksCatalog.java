@@ -437,7 +437,7 @@ public class StarRocksCatalog implements Catalog {
         try {
             conn.close();
         } catch (SQLException e) {
-            throw new CatalogException("close doris catalog failed", e);
+            throw new CatalogException("close starrocks catalog failed", e);
         }
     }
 

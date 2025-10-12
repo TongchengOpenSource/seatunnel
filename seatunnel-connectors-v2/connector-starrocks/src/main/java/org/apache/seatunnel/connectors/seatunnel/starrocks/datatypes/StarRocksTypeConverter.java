@@ -225,7 +225,7 @@ public class StarRocksTypeConverter implements TypeConverter<BasicTypeDefine<Sta
                 builder.dataType(SR_DOUBLE);
                 break;
             case DECIMAL:
-                // DORIS LARGEINT
+                // STARROCKS LARGEINT
                 if (column.getSourceType() != null
                         && column.getSourceType().equalsIgnoreCase(SR_LARGEINT)) {
                     builder.dataType(SR_LARGEINT);
@@ -558,9 +558,7 @@ public class StarRocksTypeConverter implements TypeConverter<BasicTypeDefine<Sta
 
     private void reconvertString(
             Column column, BasicTypeDefine.BasicTypeDefineBuilder<StarRocksType> builder) {
-        // source is doris too.
         if (column.getSourceType() != null && column.getSourceType().equalsIgnoreCase(SR_JSON)) {
-            // Compatible with Doris 1.x and Doris 2.x versions
             builder.columnType(SR_JSON);
             builder.dataType(SR_JSON);
             return;
@@ -603,7 +601,7 @@ public class StarRocksTypeConverter implements TypeConverter<BasicTypeDefine<Sta
 
         log.warn(
                 String.format(
-                        "The String type in StarRocks can only store up to 2GB bytes, and the current field [%s] length is [%s] bytes. If it is greater than the maximum length of the String in Doris, it may not be able to write data",
+                        "The String type in StarRocks can only store up to 2GB bytes, and the current field [%s] length is [%s] bytes. If it is greater than the maximum length of the String in StarRocks, it may not be able to write data",
                         column.getName(), column.getColumnLength()));
         builder.columnType(SR_STRING);
         builder.dataType(SR_STRING);

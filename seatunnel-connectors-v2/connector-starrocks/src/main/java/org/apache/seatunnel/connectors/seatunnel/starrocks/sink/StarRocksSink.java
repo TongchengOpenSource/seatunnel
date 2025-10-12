@@ -17,10 +17,14 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.sink;
 
+import org.apache.seatunnel.api.common.JobContext;
+import org.apache.seatunnel.api.serialization.Serializer;
 import org.apache.seatunnel.api.sink.DataSaveMode;
 import org.apache.seatunnel.api.sink.DefaultSaveModeHandler;
 import org.apache.seatunnel.api.sink.SaveModeHandler;
 import org.apache.seatunnel.api.sink.SchemaSaveMode;
+import org.apache.seatunnel.api.sink.SeaTunnelSink;
+import org.apache.seatunnel.api.sink.SinkCommitter;
 import org.apache.seatunnel.api.sink.SinkWriter;
 import org.apache.seatunnel.api.sink.SupportMultiTableSink;
 import org.apache.seatunnel.api.sink.SupportSaveMode;
@@ -31,27 +35,35 @@ import org.apache.seatunnel.api.table.catalog.TablePath;
 import org.apache.seatunnel.api.table.catalog.TableSchema;
 import org.apache.seatunnel.api.table.schema.SchemaChangeType;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
-import org.apache.seatunnel.connectors.seatunnel.common.sink.AbstractSimpleSink;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.catalog.StarRocksCatalog;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.catalog.StarRocksCatalogFactory;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.StarRocksBaseOptions;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.commiter.StarRocksCommitInfo;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.commiter.StarRocksCommitInfoSerializer;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.commiter.StarRocksCommitter;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.state.StarRocksSinkState;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.state.StarRocksSinkStateSerializer;
 
-import lombok.extern.slf4j.Slf4j;
-
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-@Slf4j
-public class StarRocksSink extends AbstractSimpleSink<SeaTunnelRow, Void>
-        implements SupportSaveMode, SupportSchemaEvolutionSink, SupportMultiTableSink {
+public class StarRocksSink
+        implements SeaTunnelSink<
+                        SeaTunnelRow, StarRocksSinkState, StarRocksCommitInfo, StarRocksCommitInfo>,
+                SupportSaveMode,
+                SupportSchemaEvolutionSink,
+                SupportMultiTableSink {
 
     private final TableSchema tableSchema;
     private final SinkConfig sinkConfig;
     private final DataSaveMode dataSaveMode;
     private final SchemaSaveMode schemaSaveMode;
     private final CatalogTable catalogTable;
+    private String jobId;
 
     public StarRocksSink(SinkConfig sinkConfig, CatalogTable catalogTable) {
         this.sinkConfig = sinkConfig;
@@ -59,12 +71,11 @@ public class StarRocksSink extends AbstractSimpleSink<SeaTunnelRow, Void>
         this.catalogTable = catalogTable;
         this.dataSaveMode = sinkConfig.getDataSaveMode();
         this.schemaSaveMode = sinkConfig.getSchemaSaveMode();
-        // Load the JDBC driver in to DriverManager
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-        } catch (Exception e) {
-            log.warn("Failed to load JDBC driver {}", "com.mysql.cj.jdbc.Driver", e);
-        }
+    }
+
+    @Override
+    public void setJobContext(JobContext jobContext) {
+        this.jobId = jobContext.getJobId();
     }
 
     @Override
@@ -74,24 +85,30 @@ public class StarRocksSink extends AbstractSimpleSink<SeaTunnelRow, Void>
 
     @Override
     public StarRocksSinkWriter createWriter(SinkWriter.Context context) {
-        // Load the JDBC driver in to DriverManager
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-        } catch (Exception e) {
-            log.warn("Failed to load JDBC driver {}", "com.mysql.cj.jdbc.Driver", e);
-        }
         TablePath sinkTablePath = catalogTable.getTablePath();
-        return new StarRocksSinkWriter(sinkConfig, tableSchema, sinkTablePath);
+        return new StarRocksSinkWriter(
+                context, Collections.emptyList(), sinkConfig, tableSchema, sinkTablePath);
+    }
+
+    @Override
+    public SinkWriter<SeaTunnelRow, StarRocksCommitInfo, StarRocksSinkState> restoreWriter(
+            SinkWriter.Context context, List<StarRocksSinkState> states) throws IOException {
+        TablePath sinkTablePath = catalogTable.getTablePath();
+        return new StarRocksSinkWriter(context, states, sinkConfig, tableSchema, sinkTablePath);
+    }
+
+    @Override
+    public Optional<Serializer<StarRocksSinkState>> getWriterStateSerializer() {
+        return Optional.of(new StarRocksSinkStateSerializer());
+    }
+
+    @Override
+    public Optional<Serializer<StarRocksCommitInfo>> getCommitInfoSerializer() {
+        return Optional.of(new StarRocksCommitInfoSerializer());
     }
 
     @Override
     public Optional<SaveModeHandler> getSaveModeHandler() {
-        // Load the JDBC driver in to DriverManager
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-        } catch (Exception e) {
-            log.warn("Failed to load JDBC driver {}", "com.mysql.cj.jdbc.Driver", e);
-        }
         TablePath tablePath =
                 TablePath.of(
                         catalogTable.getTableId().getDatabaseName(),
@@ -117,6 +134,11 @@ public class StarRocksSink extends AbstractSimpleSink<SeaTunnelRow, Void>
     @Override
     public Optional<CatalogTable> getWriteCatalogTable() {
         return Optional.of(catalogTable);
+    }
+
+    @Override
+    public Optional<SinkCommitter<StarRocksCommitInfo>> createCommitter() throws IOException {
+        return Optional.of(new StarRocksCommitter(sinkConfig));
     }
 
     @Override

@@ -19,6 +19,7 @@ package org.apache.seatunnel.connectors.seatunnel.starrocks.client;
 
 import org.apache.seatunnel.common.utils.JsonUtils;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequestInterceptor;
@@ -28,6 +29,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
@@ -43,6 +45,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+
+import static org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorErrorCode.FLUSH_DATA_FAILED;
 
 @Slf4j
 public class HttpHelper {
@@ -183,6 +188,56 @@ public class HttpHelper {
         }
     }
 
+    public String doHttpExecute(HttpClientBuilder clientBuilder, HttpRequestBase httpRequestBase)
+            throws IOException {
+        if (Objects.isNull(clientBuilder)) clientBuilder = getDefaultClientBuilder();
+        try (CloseableHttpClient client = clientBuilder.build()) {
+            try (CloseableHttpResponse response = client.execute(httpRequestBase)) {
+                return parseHttpResponse(response, httpRequestBase.getMethod());
+            }
+        }
+    }
+
+    public String parseHttpResponse(CloseableHttpResponse response, String requestType)
+            throws StarRocksConnectorException {
+        int code = response.getStatusLine().getStatusCode();
+        if (HttpStatus.SC_TEMPORARY_REDIRECT == code) {
+            String errorMsg =
+                    String.format(
+                            "Request %s failed because http response code is 307 which means 'Temporary Redirect'. "
+                                    + "This can happen when FE responds the request slowly , you should find the reason first. The reason may be "
+                                    + "StarRocks FE/ENGINE GC, network delay, or others. response status line: %s",
+                            requestType, response.getStatusLine());
+            throw new StarRocksConnectorException(FLUSH_DATA_FAILED, errorMsg);
+        } else if (HttpStatus.SC_OK != code) {
+            String errorMsg =
+                    String.format(
+                            "Request %s failed because http response code is not 200. response status line: %s",
+                            requestType, response.getStatusLine());
+            throw new StarRocksConnectorException(FLUSH_DATA_FAILED, errorMsg);
+        }
+
+        HttpEntity respEntity = response.getEntity();
+        if (respEntity == null) {
+            String errorMsg =
+                    String.format(
+                            "Request %s failed because response entity is null. response status line: %s",
+                            requestType, response.getStatusLine());
+            throw new StarRocksConnectorException(FLUSH_DATA_FAILED, errorMsg);
+        }
+
+        try {
+            return EntityUtils.toString(respEntity);
+        } catch (Exception e) {
+            String errorMsg =
+                    String.format(
+                            "Request %s failed because fail to convert response entity to string. "
+                                    + "response status line: %s, response entity: %s",
+                            requestType, response.getStatusLine(), response.getEntity());
+            throw new StarRocksConnectorException(FLUSH_DATA_FAILED, errorMsg, e);
+        }
+    }
+
     private CloseableHttpClient buildHttpClient() {
         final HttpClientBuilder httpClientBuilder =
                 HttpClients.custom()
@@ -208,5 +263,16 @@ public class HttpHelper {
             log.warn("Failed to connect to address:{}", host, e1);
             return false;
         }
+    }
+
+    private HttpClientBuilder getDefaultClientBuilder() {
+        return HttpClients.custom()
+                .setRedirectStrategy(
+                        new DefaultRedirectStrategy() {
+                            @Override
+                            protected boolean isRedirectable(String method) {
+                                return true;
+                            }
+                        });
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.seatunnel.connectors.seatunnel.starrocks.client;
 
+import org.apache.seatunnel.connectors.seatunnel.starrocks.client.sink.DefaultSinkManager;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
 
@@ -32,11 +33,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class StarRocksSinkManagerTest {
+public class DefaultSinkManagerTest {
 
     private SinkConfig mockSinkConfig;
     private StarRocksStreamLoadVisitor mockStreamLoadVisitor;
-    private StarRocksSinkManager sinkManager;
+    private DefaultSinkManager sinkManager;
 
     @BeforeEach
     void setUp() {
@@ -48,7 +49,7 @@ public class StarRocksSinkManagerTest {
         when(mockSinkConfig.getRetryBackoffMultiplierMs()).thenReturn(100);
         when(mockSinkConfig.getMaxRetryBackoffMs()).thenReturn(1000);
         this.sinkManager =
-                new StarRocksSinkManager(mockSinkConfig, null, mockStreamLoadVisitor) {
+                new DefaultSinkManager(mockSinkConfig, null, mockStreamLoadVisitor) {
                     public String createBatchLabel() {
                         return "test-label";
                     }

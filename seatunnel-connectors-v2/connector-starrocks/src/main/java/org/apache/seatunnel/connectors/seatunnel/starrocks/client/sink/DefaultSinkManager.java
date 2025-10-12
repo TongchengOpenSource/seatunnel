@@ -15,26 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.seatunnel.connectors.seatunnel.starrocks.client;
+package org.apache.seatunnel.connectors.seatunnel.starrocks.client.sink;
 
 import org.apache.seatunnel.shade.com.google.common.base.Strings;
 
 import org.apache.seatunnel.api.table.catalog.TableSchema;
 import org.apache.seatunnel.common.utils.ExceptionUtils;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.client.SinkManager;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.client.StarRocksFlushTuple;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.client.StarRocksStreamLoadVisitor;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.client.sink.entity.StreamLoadResponse;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.config.SinkConfig;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorErrorCode;
 import org.apache.seatunnel.connectors.seatunnel.starrocks.exception.StarRocksConnectorException;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.commiter.StarRocksCommitInfo;
+import org.apache.seatunnel.connectors.seatunnel.starrocks.sink.state.StarRocksSinkState;
 
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
-public class StarRocksSinkManager {
+public class DefaultSinkManager implements SinkManager {
 
     private final SinkConfig sinkConfig;
     private final List<byte[]> batchList;
@@ -45,11 +53,11 @@ public class StarRocksSinkManager {
     private int batchRowCount = 0;
     private long batchBytesSize = 0;
 
-    public StarRocksSinkManager(SinkConfig sinkConfig, TableSchema tableSchema) {
+    public DefaultSinkManager(SinkConfig sinkConfig, TableSchema tableSchema) {
         this(sinkConfig, tableSchema, new StarRocksStreamLoadVisitor(sinkConfig, tableSchema));
     }
 
-    StarRocksSinkManager(
+    public DefaultSinkManager(
             SinkConfig sinkConfig,
             TableSchema tableSchema,
             StarRocksStreamLoadVisitor streamLoadVisitor) {
@@ -65,6 +73,9 @@ public class StarRocksSinkManager {
         initialize = true;
     }
 
+    @Override
+    public void init() {}
+
     public synchronized void write(String record) throws IOException {
         tryInit();
         checkFlushException();
@@ -77,6 +88,12 @@ public class StarRocksSinkManager {
             flush();
         }
     }
+
+    @Override
+    public void callback(StreamLoadResponse response) {}
+
+    @Override
+    public void callback(Throwable e) {}
 
     public synchronized void close() throws IOException {
         flush();
@@ -138,6 +155,34 @@ public class StarRocksSinkManager {
         batchList.clear();
         batchRowCount = 0;
         batchBytesSize = 0;
+    }
+
+    @Override
+    public List<StarRocksSinkState> snapshot(long checkpointId) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void beginTransaction(long checkpointId) {}
+
+    @Override
+    public Optional<StarRocksCommitInfo> prepareCommit() {
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean abort(long checkpointId, int subTaskIndex) throws Exception {
+        return false;
+    }
+
+    @Override
+    public boolean abort() throws Exception {
+        return false;
+    }
+
+    @Override
+    public boolean commit(String transactionId) {
+        return false;
     }
 
     private void checkFlushException() {
